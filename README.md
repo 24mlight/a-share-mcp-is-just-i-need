@@ -111,6 +111,14 @@ a_share_mcp/
 
 ## 安装环境
 
+### Installing via Smithery
+
+To install A-Share Market Data Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@24mlight/a-share-mcp-is-just-i-need):
+
+```bash
+npx -y @smithery/cli install @24mlight/a-share-mcp-is-just-i-need --client claude
+```
+
 在项目根目录下执行：
 
 要启动 A 股 MCP 服务器，请按照以下步骤操作：
