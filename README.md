@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/24mlight-a-share-mcp-is-just-i-need-badge.png)](https://mseep.ai/app/24mlight-a-share-mcp-is-just-i-need)
+
 <div align="center">
 
 # 📊 a-share-mcp 📈
