@@ -1,6 +1,6 @@
 """
-Date utility tools for the MCP server.
-Convenience helpers around trading days and analysis timeframes.
+MCP 服务器的日期实用工具。
+围绕交易日和分析时间范围的便捷辅助工具。
 """
 import logging
 from datetime import datetime, timedelta
@@ -14,25 +14,25 @@ logger = logging.getLogger(__name__)
 
 def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register date utility tools with the MCP app.
+    向 MCP 应用注册日期实用工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP 应用实例。
+        active_data_source (FinancialDataSource): 激活的金融数据源。
     """
 
     @app.tool()
     def get_latest_trading_date() -> str:
         """
-        Get the latest trading date up to today.
+        获取截至今日的最新交易日。
 
         Returns:
-            The latest trading date in 'YYYY-MM-DD' format.
+            str: 'YYYY-MM-DD' 格式的最新交易日。
         """
-        logger.info("Tool 'get_latest_trading_date' called")
+        logger.info("工具 'get_latest_trading_date' 已调用")
         try:
             today = datetime.now().strftime("%Y-%m-%d")
-            # Query within the current month (safe bound)
+            # 查询当月（安全边界）
             start_date = (datetime.now().replace(day=1)).strftime("%Y-%m-%d")
             end_date = (datetime.now().replace(day=28)).strftime("%Y-%m-%d")
 
@@ -47,29 +47,29 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
                     latest_trading_date = dstr
 
             if latest_trading_date:
-                logger.info("Latest trading date found: %s", latest_trading_date)
+                logger.info("找到最新交易日: %s", latest_trading_date)
                 return latest_trading_date
             else:
-                logger.warning("No trading dates found before today, returning today's date")
+                logger.warning("今天之前未找到交易日，返回今天日期")
                 return today
 
         except Exception as e:
-            logger.exception("Error determining latest trading date: %s", e)
+            logger.exception("确定最新交易日时出错: %s", e)
             return datetime.now().strftime("%Y-%m-%d")
 
     @app.tool()
     def get_market_analysis_timeframe(period: str = "recent") -> str:
         """
-        Get a market analysis timeframe label tuned for current calendar context.
+        获取根据当前日历上下文调整的市场分析时间范围标签。
 
         Args:
-            period: One of 'recent' (default), 'quarter', 'half_year', 'year'.
+            period (str, optional): 'recent' (默认), 'quarter', 'half_year', 'year' 之一。
 
         Returns:
-            A human-friendly label plus ISO range, like "2025年1月-3月 (ISO: 2025-01-01 至 2025-03-31)".
+            str: 一个易于理解的标签加上ISO范围，例如 "2025年1月-3月 (ISO: 2025-01-01 至 2025-03-31)"。
         """
         logger.info(
-            f"Tool 'get_market_analysis_timeframe' called with period={period}")
+            f"工具 'get_market_analysis_timeframe' 已调用，周期={period}")
 
         now = datetime.now()
         end_date = now
@@ -137,47 +137,47 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
             date_range = f"{start_date.year}年{start_date.month}月"
 
         result = f"{date_range} (ISO: {start_iso_date} to {end_iso_date})"
-        logger.info(f"Generated market analysis timeframe: {result}")
+        logger.info(f"生成的市场分析时间范围: {result}")
         return result
 
     @app.tool()
     def is_trading_day(date: str) -> str:
         """
-        Check whether a given date is a trading day.
+        检查给定日期是否为交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD' 格式的日期。
 
         Returns:
-            'Yes' or 'No'.
+            str: '是' 或 '否'。
 
         Examples:
             - is_trading_day('2025-01-03')
         """
-        logger.info("Tool 'is_trading_day' called date=%s", date)
+        logger.info("工具 'is_trading_day' 已调用 date=%s", date)
         try:
             df = active_data_source.get_trade_dates(start_date=date, end_date=date)
             if df is None or df.empty:
-                return "No"
+                return "否"
             flag_col = 'is_trading_day' if 'is_trading_day' in df.columns else df.columns[-1]
             val = str(df.iloc[0][flag_col])
-            return "Yes" if val == '1' else "No"
+            return "是" if val == '1' else "否"
         except Exception as e:
-            logger.exception("Exception processing is_trading_day: %s", e)
-            return f"Error: {e}"
+            logger.exception("处理 is_trading_day 时发生异常: %s", e)
+            return f"错误: {e}"
 
     @app.tool()
     def previous_trading_day(date: str) -> str:
         """
-        Get the previous trading day before a given date.
+        获取给定日期之前的上一个交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD' 格式的日期。
 
         Returns:
-            The previous trading day in 'YYYY-MM-DD'. If none found nearby, returns input date.
+            str: 'YYYY-MM-DD' 格式的上一个交易日。如果在附近找不到，则返回输入日期。
         """
-        logger.info("Tool 'previous_trading_day' called date=%s", date)
+        logger.info("工具 'previous_trading_day' 已调用 date=%s", date)
         try:
             d = datetime.strptime(date, "%Y-%m-%d")
             start = (d - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -192,21 +192,21 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
                 return date
             return str(candidates.iloc[-1][day_col])
         except Exception as e:
-            logger.exception("Exception processing previous_trading_day: %s", e)
-            return f"Error: {e}"
+            logger.exception("处理 previous_trading_day 时发生异常: %s", e)
+            return f"错误: {e}"
 
     @app.tool()
     def next_trading_day(date: str) -> str:
         """
-        Get the next trading day after a given date.
+        获取给定日期之后的下一个交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD' 格式的日期。
 
         Returns:
-            The next trading day in 'YYYY-MM-DD'. If none found nearby, returns input date.
+            str: 'YYYY-MM-DD' 格式的下一个交易日。如果在附近找不到，则返回输入日期。
         """
-        logger.info("Tool 'next_trading_day' called date=%s", date)
+        logger.info("工具 'next_trading_day' 已调用 date=%s", date)
         try:
             d = datetime.strptime(date, "%Y-%m-%d")
             start = date
@@ -221,6 +221,5 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
                 return date
             return str(candidates.iloc[0][day_col])
         except Exception as e:
-            logger.exception("Exception processing next_trading_day: %s", e)
-            return f"Error: {e}"
-
+            logger.exception("处理 next_trading_day 时发生异常: %s", e)
+            return f"错误: {e}"

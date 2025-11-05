@@ -1,6 +1,6 @@
 """
-Stock market tools for the MCP server.
-Historical prices, basic info, dividends, and adjust factors with clear options.
+MCP 服务器的股票市场工具。
+提供历史价格、基本信息、股息和复权因子，选项清晰。
 """
 import logging
 from typing import List, Optional
@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register stock market data tools with the MCP app.
+    向 MCP 应用注册股票市场数据工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP 应用实例。
+        active_data_source (FinancialDataSource): 激活的金融数据源。
     """
 
     @app.tool()
@@ -33,49 +33,47 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
         format: str = "markdown",
     ) -> str:
         """
-        Fetches historical K-line (OHLCV) data for a Chinese A-share stock.
+        获取中国A股股票的历史K线（OHLCV）数据。
 
         Args:
-            code: The stock code in Baostock format (e.g., 'sh.600000', 'sz.000001').
-            start_date: Start date in 'YYYY-MM-DD' format.
-            end_date: End date in 'YYYY-MM-DD' format.
-            frequency: Data frequency. Valid options (from Baostock):
-                         'd': daily
-                         'w': weekly
-                         'm': monthly
-                         '5': 5 minutes
-                         '15': 15 minutes
-                         '30': 30 minutes
-                         '60': 60 minutes
-                       Defaults to 'd'.
-            adjust_flag: Adjustment flag for price/volume. Valid options (from Baostock):
-                           '1': Forward adjusted (后复权)
-                           '2': Backward adjusted (前复权)
-                           '3': Non-adjusted (不复权)
-                         Defaults to '3'.
-            fields: Optional list of specific data fields to retrieve (must be valid Baostock fields).
-                    If None or empty, default fields will be used (e.g., date, code, open, high, low, close, volume, amount, pctChg).
-            limit: Max rows to return. Defaults to 250.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            code (str): Baostock 格式的股票代码 (例如, 'sh.600000', 'sz.000001')。
+            start_date (str): 开始日期，格式为 'YYYY-MM-DD'。
+            end_date (str): 结束日期，格式为 'YYYY-MM-DD'。
+            frequency (str, optional): 数据频率。有效选项 (来自 Baostock):
+                                       'd': 日线
+                                       'w': 周线
+                                       'm': 月线
+                                       '5': 5分钟线
+                                       '15': 15分钟线
+                                       '30': 30分钟线
+                                       '60': 60分钟线
+                                     默认为 'd'。
+            adjust_flag (str, optional): 价格/成交量复权标志。有效选项 (来自 Baostock):
+                                         '1': 后复权
+                                         '2': 前复权
+                                         '3': 不复权
+                                       默认为 '3'。
+            fields (Optional[List[str]], optional): 要检索的特定数据字段的可选列表 (必须是有效的 Baostock 字段)。
+                                                    如果为 None 或为空，将使用默认字段 (例如, date, code, open, high, low, close, volume, amount, pctChg)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            A Markdown formatted string containing the K-line data table, or an error message.
-            The table might be truncated if the result set is too large.
+            str: 包含K线数据表的 Markdown 格式字符串，或错误消息。
+                 如果结果集太大，表格可能会被截断。
         """
         logger.info(
-            f"Tool 'get_historical_k_data' called for {code} ({start_date}-{end_date}, freq={frequency}, adj={adjust_flag}, fields={fields})")
+            f"工具 'get_historical_k_data' 已为 {code} 调用 ({start_date}-{end_date}, 频率={frequency}, 复权={adjust_flag}, 字段={fields})")
         try:
-            # Validate frequency and adjust_flag if necessary (basic example)
             valid_freqs = ['d', 'w', 'm', '5', '15', '30', '60']
             valid_adjusts = ['1', '2', '3']
             if frequency not in valid_freqs:
-                logger.warning(f"Invalid frequency requested: {frequency}")
-                return f"Error: Invalid frequency '{frequency}'. Valid options are: {valid_freqs}"
+                logger.warning(f"请求了无效的频率: {frequency}")
+                return f"错误: 无效的频率 '{frequency}'。有效选项为: {valid_freqs}"
             if adjust_flag not in valid_adjusts:
-                logger.warning(f"Invalid adjust_flag requested: {adjust_flag}")
-                return f"Error: Invalid adjust_flag '{adjust_flag}'. Valid options are: {valid_adjusts}"
+                logger.warning(f"请求了无效的复权标志: {adjust_flag}")
+                return f"错误: 无效的复权标志 '{adjust_flag}'。有效选项为: {valid_adjusts}"
 
-            # Call the injected data source
             df = active_data_source.get_historical_k_data(
                 code=code,
                 start_date=start_date,
@@ -84,164 +82,162 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
                 adjust_flag=adjust_flag,
                 fields=fields,
             )
-            # Format the result
             logger.info(
-                f"Successfully retrieved K-data for {code}, formatting output.")
+                f"已成功检索 {code} 的K线数据，正在格式化输出。")
             meta = {"code": code, "start_date": start_date, "end_date": end_date, "frequency": frequency, "adjust_flag": adjust_flag}
             return format_table_output(df, format=format, max_rows=limit, meta=meta)
 
         except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
+            logger.warning(f"未找到数据错误 for {code}: {e}")
+            return f"错误: {e}"
         except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
+            logger.error(f"登录错误 for {code}: {e}")
+            return f"错误: 无法连接到数据源。{e}"
         except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
+            logger.error(f"数据源错误 for {code}: {e}")
+            return f"错误: 获取数据时发生错误。{e}"
         except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
+            logger.warning(f"值错误处理请求 for {code}: {e}")
+            return f"错误: 无效的输入参数。{e}"
         except Exception as e:
-            # Catch-all for unexpected errors
             logger.exception(
-                f"Unexpected Exception processing get_historical_k_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+                f"处理 get_historical_k_data for {code} 时发生意外异常: {e}")
+            return f"错误: 发生意外错误: {e}"
 
     @app.tool()
     def get_stock_basic_info(code: str, fields: Optional[List[str]] = None, format: str = "markdown") -> str:
         """
-        Fetches basic information for a given Chinese A-share stock.
+        获取给定中国A股股票的基本信息。
 
         Args:
-            code: The stock code in Baostock format (e.g., 'sh.600000', 'sz.000001').
-            fields: Optional list to select specific columns from the available basic info
-                    (e.g., ['code', 'code_name', 'industry', 'listingDate']).
-                    If None or empty, returns all available basic info columns from Baostock.
+            code (str): Baostock 格式的股票代码 (例如, 'sh.600000', 'sz.000001')。
+            fields (Optional[List[str]], optional): 从可用的基本信息中选择特定列的可选列表
+                                                    (例如, ['code', 'code_name', 'industry', 'listingDate'])。
+                                                    如果为 None 或为空，则返回 Baostock 提供的所有可用基本信息列。
+            format (str, optional): 输出格式。默认为 'markdown'。
 
         Returns:
-            Basic stock information in the requested format.
+            str: 请求格式的股票基本信息。
         """
         logger.info(
-            f"Tool 'get_stock_basic_info' called for {code} (fields={fields})")
+            f"工具 'get_stock_basic_info' 已为 {code} 调用 (字段={fields})")
         try:
-            # Call the injected data source
-            # Pass fields along; BaostockDataSource implementation handles selection
             df = active_data_source.get_stock_basic_info(
                 code=code, fields=fields)
 
-            # Format the result (basic info usually small)
             logger.info(
-                f"Successfully retrieved basic info for {code}, formatting output.")
+                f"已成功检索 {code} 的基本信息，正在格式化输出。")
             meta = {"code": code}
             return format_table_output(df, format=format, max_rows=df.shape[0] if df is not None else 0, meta=meta)
 
         except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
+            logger.warning(f"未找到数据错误 for {code}: {e}")
+            return f"错误: {e}"
         except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
+            logger.error(f"登录错误 for {code}: {e}")
+            return f"错误: 无法连接到数据源。{e}"
         except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
+            logger.error(f"数据源错误 for {code}: {e}")
+            return f"错误: 获取数据时发生错误。{e}"
         except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter or requested field not available. {e}"
+            logger.warning(f"值错误处理请求 for {code}: {e}")
+            return f"错误: 无效的输入参数或请求的字段不可用。{e}"
         except Exception as e:
             logger.exception(
-                f"Unexpected Exception processing get_stock_basic_info for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+                f"处理 get_stock_basic_info for {code} 时发生意外异常: {e}")
+            return f"错误: 发生意外错误: {e}"
 
     @app.tool()
     def get_dividend_data(code: str, year: str, year_type: str = "report", limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches dividend information for a given stock code and year.
+        获取给定股票代码和年份的股息信息。
 
         Args:
-            code: The stock code in Baostock format (e.g., 'sh.600000', 'sz.000001').
-            year: The year to query (e.g., '2023').
-            year_type: Type of year. Valid options (from Baostock):
-                         'report': Announcement year (预案公告年份)
-                         'operate': Ex-dividend year (除权除息年份)
-                       Defaults to 'report'.
+            code (str): Baostock 格式的股票代码 (例如, 'sh.600000', 'sz.000001')。
+            year (str): 查询年份 (例如, '2023')。
+            year_type (str, optional): 年份类型。有效选项 (来自 Baostock):
+                                       'report': 预案公告年份
+                                       'operate': 除权除息年份
+                                     默认为 'report'。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式。默认为 'markdown'。
 
         Returns:
-            Dividend records table.
+            str: 股息记录表。
         """
         logger.info(
-            f"Tool 'get_dividend_data' called for {code}, year={year}, year_type={year_type}")
+            f"工具 'get_dividend_data' 已为 {code} 调用，年份={year}，年份类型={year_type}")
         try:
-            # Basic validation
             if year_type not in ['report', 'operate']:
-                logger.warning(f"Invalid year_type requested: {year_type}")
-                return f"Error: Invalid year_type '{year_type}'. Valid options are: 'report', 'operate'"
+                logger.warning(f"请求了无效的年份类型: {year_type}")
+                return f"错误: 无效的年份类型 '{year_type}'。有效选项为: 'report', 'operate'"
             if not year.isdigit() or len(year) != 4:
-                logger.warning(f"Invalid year format requested: {year}")
-                return f"Error: Invalid year '{year}'. Please provide a 4-digit year."
+                logger.warning(f"请求了无效的年份格式: {year}")
+                return f"错误: 无效的年份 '{year}'。请输入4位数字的年份。"
 
             df = active_data_source.get_dividend_data(
                 code=code, year=year, year_type=year_type)
             logger.info(
-                f"Successfully retrieved dividend data for {code}, year {year}.")
+                f"已成功检索 {code} 在 {year} 年的股息数据。")
             meta = {"code": code, "year": year, "year_type": year_type}
             return format_table_output(df, format=format, max_rows=limit, meta=meta)
 
         except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}, year {year}: {e}")
-            return f"Error: {e}"
+            logger.warning(f"未找到数据错误 for {code}, year {year}: {e}")
+            return f"错误: {e}"
         except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
+            logger.error(f"登录错误 for {code}: {e}")
+            return f"错误: 无法连接到数据源。{e}"
         except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
+            logger.error(f"数据源错误 for {code}: {e}")
+            return f"错误: 获取数据时发生错误。{e}"
         except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
+            logger.warning(f"值错误处理请求 for {code}: {e}")
+            return f"错误: 无效的输入参数。{e}"
         except Exception as e:
             logger.exception(
-                f"Unexpected Exception processing get_dividend_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+                f"处理 get_dividend_data for {code} 时发生意外异常: {e}")
+            return f"错误: 发生意外错误: {e}"
 
     @app.tool()
     def get_adjust_factor_data(code: str, start_date: str, end_date: str, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches adjustment factor data for a given stock code and date range.
-        Uses Baostock's "涨跌幅复权算法" factors. Useful for calculating adjusted prices.
+        获取给定股票代码和日期范围的复权因子数据。
+        使用 Baostock 的“涨跌幅复权算法”因子。可用于计算复权价格。
 
         Args:
-            code: The stock code in Baostock format (e.g., 'sh.600000', 'sz.000001').
-            start_date: Start date in 'YYYY-MM-DD' format.
-            end_date: End date in 'YYYY-MM-DD' format.
+            code (str): Baostock 格式的股票代码 (例如, 'sh.600000', 'sz.000001')。
+            start_date (str): 开始日期，格式为 'YYYY-MM-DD'。
+            end_date (str): 结束日期，格式为 'YYYY-MM-DD'。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式。默认为 'markdown'。
 
         Returns:
-            Adjustment factors table.
+            str: 复权因子表。
         """
         logger.info(
-            f"Tool 'get_adjust_factor_data' called for {code} ({start_date} to {end_date})")
+            f"工具 'get_adjust_factor_data' 已为 {code} 调用 ({start_date} 到 {end_date})")
         try:
-            # Basic date validation could be added here if desired
             df = active_data_source.get_adjust_factor_data(
                 code=code, start_date=start_date, end_date=end_date)
             logger.info(
-                f"Successfully retrieved adjustment factor data for {code}.")
+                f"已成功检索 {code} 的复权因子数据。")
             meta = {"code": code, "start_date": start_date, "end_date": end_date}
             return format_table_output(df, format=format, max_rows=limit, meta=meta)
 
         except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
+            logger.warning(f"未找到数据错误 for {code}: {e}")
+            return f"错误: {e}"
         except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
+            logger.error(f"登录错误 for {code}: {e}")
+            return f"错误: 无法连接到数据源。{e}"
         except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
+            logger.error(f"数据源错误 for {code}: {e}")
+            return f"错误: 获取数据时发生错误。{e}"
         except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
+            logger.warning(f"值错误处理请求 for {code}: {e}")
+            return f"错误: 无效的输入参数。{e}"
         except Exception as e:
             logger.exception(
-                f"Unexpected Exception processing get_adjust_factor_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+                f"处理 get_adjust_factor_data for {code} 时发生意外异常: {e}")
+            return f"错误: 发生意外错误: {e}"

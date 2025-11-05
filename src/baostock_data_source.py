@@ -1,4 +1,4 @@
-# Implementation of the FinancialDataSource interface using Baostock
+# 使用 Baostock 实现 FinancialDataSource 接口
 import baostock as bs
 import pandas as pd
 from typing import List, Optional
@@ -6,7 +6,7 @@ import logging
 from .data_source_interface import FinancialDataSource, DataSourceError, NoDataFoundError, LoginError
 from .utils import baostock_login_context
 
-# Get a logger instance for this module
+# 获取此模块的 logger 实例
 logger = logging.getLogger(__name__)
 
 DEFAULT_K_FIELDS = [
@@ -17,12 +17,10 @@ DEFAULT_K_FIELDS = [
 
 DEFAULT_BASIC_FIELDS = [
     "code", "tradeStatus", "code_name"
-    # Add more default fields as needed, e.g., "industry", "listingDate"
+    # 可根据需要添加更多默认字段, 例如 "industry", "listingDate"
 ]
 
-# Helper function to reduce repetition in financial data fetching
-
-
+# 辅助函数，用于减少财务数据获取中的重复代码
 def _fetch_financial_data(
     bs_query_func,
     data_type_name: str,
@@ -30,22 +28,39 @@ def _fetch_financial_data(
     year: str,
     quarter: int
 ) -> pd.DataFrame:
+    """
+    通用函数，用于从 Baostock 获取季度的财务数据。
+
+    Args:
+        bs_query_func (function): 用于查询的 Baostock 函数 (例如, bs.query_profit_data)。
+        data_type_name (str): 数据类型的名称，用于日志记录 (例如, "Profitability")。
+        code (str): 股票代码。
+        year (str): 年份。
+        quarter (int): 季度。
+
+    Returns:
+        pd.DataFrame: 包含财务数据的 pandas DataFrame。
+
+    Raises:
+        LoginError: 如果 Baostock 登录失败。
+        NoDataFoundError: 如果未找到数据。
+        DataSourceError: 如果发生其他 Baostock API 错误。
+    """
     logger.info(
-        f"Fetching {data_type_name} data for {code}, year={year}, quarter={quarter}")
+        f"正在获取 {data_type_name} 数据，代码: {code}，年份: {year}，季度: {quarter}")
     try:
         with baostock_login_context():
-            # Assuming all these functions take code, year, quarter
             rs = bs_query_func(code=code, year=year, quarter=quarter)
 
             if rs.error_code != '0':
                 logger.error(
-                    f"Baostock API error ({data_type_name}) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                    f"Baostock API 错误 ({data_type_name})，代码 {code}: {rs.error_msg} (错误码: {rs.error_code})")
                 if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                     raise NoDataFoundError(
-                        f"No {data_type_name} data found for {code}, {year}Q{quarter}. Baostock msg: {rs.error_msg}")
+                        f"未找到 {code} 在 {year}年Q{quarter} 的 {data_type_name} 数据。Baostock 消息: {rs.error_msg}")
                 else:
                     raise DataSourceError(
-                        f"Baostock API error fetching {data_type_name} data: {rs.error_msg} (code: {rs.error_code})")
+                        f"获取 {data_type_name} 数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
             data_list = []
             while rs.next():
@@ -53,49 +68,57 @@ def _fetch_financial_data(
 
             if not data_list:
                 logger.warning(
-                    f"No {data_type_name} data found for {code}, {year}Q{quarter} (empty result set from Baostock).")
+                    f"未找到 {code} 在 {year}年Q{quarter} 的 {data_type_name} 数据 (Baostock 返回空结果集)。")
                 raise NoDataFoundError(
-                    f"No {data_type_name} data found for {code}, {year}Q{quarter} (empty result set).")
+                    f"未找到 {code} 在 {year}年Q{quarter} 的 {data_type_name} 数据 (空结果集)。")
 
             result_df = pd.DataFrame(data_list, columns=rs.fields)
             logger.info(
-                f"Retrieved {len(result_df)} {data_type_name} records for {code}, {year}Q{quarter}.")
+                f"已获取 {len(result_df)} 条关于 {code} 在 {year}年Q{quarter} 的 {data_type_name} 记录。")
             return result_df
 
     except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
         logger.warning(
-            f"Caught known error fetching {data_type_name} data for {code}: {type(e).__name__}")
+            f"获取 {data_type_name} 数据时捕获到已知错误，代码 {code}: {type(e).__name__}")
         raise e
     except Exception as e:
         logger.exception(
-            f"Unexpected error fetching {data_type_name} data for {code}: {e}")
+            f"获取 {data_type_name} 数据时发生未知错误，代码 {code}: {e}")
         raise DataSourceError(
-            f"Unexpected error fetching {data_type_name} data for {code}: {e}")
+            f"获取 {data_type_name} 数据时发生未知错误，代码 {code}: {e}")
 
-# Helper function to reduce repetition for index constituent data fetching
-
-
+# 辅助函数，用于减少指数成分股数据获取的重复代码
 def _fetch_index_constituent_data(
     bs_query_func,
     index_name: str,
     date: Optional[str] = None
 ) -> pd.DataFrame:
+    """
+    通用函数，用于从 Baostock 获取指数成分股数据。
+
+    Args:
+        bs_query_func (function): 用于查询的 Baostock 函数 (例如, bs.query_sz50_stocks)。
+        index_name (str): 指数名称，用于日志记录 (例如, "SZSE 50")。
+        date (Optional[str], optional): 查询日期，格式 'YYYY-MM-DD'。默认为最新日期。
+
+    Returns:
+        pd.DataFrame: 包含指数成分股数据的 pandas DataFrame。
+    """
     logger.info(
-        f"Fetching {index_name} constituents for date={date or 'latest'}")
+        f"正在获取 {index_name} 成分股，日期: {date or '最新'}")
     try:
         with baostock_login_context():
-            # date is optional, defaults to latest
             rs = bs_query_func(date=date)
 
             if rs.error_code != '0':
                 logger.error(
-                    f"Baostock API error ({index_name} Constituents) for date {date}: {rs.error_msg} (code: {rs.error_code})")
+                    f"Baostock API 错误 ({index_name} 成分股)，日期 {date}: {rs.error_msg} (错误码: {rs.error_code})")
                 if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                     raise NoDataFoundError(
-                        f"No {index_name} constituent data found for date {date}. Baostock msg: {rs.error_msg}")
+                        f"未找到日期为 {date} 的 {index_name} 成分股数据。Baostock 消息: {rs.error_msg}")
                 else:
                     raise DataSourceError(
-                        f"Baostock API error fetching {index_name} constituents: {rs.error_msg} (code: {rs.error_code})")
+                        f"获取 {index_name} 成分股时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
             data_list = []
             while rs.next():
@@ -103,38 +126,49 @@ def _fetch_index_constituent_data(
 
             if not data_list:
                 logger.warning(
-                    f"No {index_name} constituent data found for date {date} (empty result set).")
+                    f"未找到日期为 {date} 的 {index_name} 成分股数据 (空结果集)。")
                 raise NoDataFoundError(
-                    f"No {index_name} constituent data found for date {date} (empty result set).")
+                    f"未找到日期为 {date} 的 {index_name} 成分股数据 (空结果集)。")
 
             result_df = pd.DataFrame(data_list, columns=rs.fields)
             logger.info(
-                f"Retrieved {len(result_df)} {index_name} constituents for date {date or 'latest'}.")
+                f"已获取 {len(result_df)} 条关于 {index_name} 的成分股记录，日期: {date or '最新'}")
             return result_df
 
     except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
         logger.warning(
-            f"Caught known error fetching {index_name} constituents for date {date}: {type(e).__name__}")
+            f"获取 {index_name} 成分股时捕获到已知错误，日期 {date}: {type(e).__name__}")
         raise e
     except Exception as e:
         logger.exception(
-            f"Unexpected error fetching {index_name} constituents for date {date}: {e}")
+            f"获取 {index_name} 成分股时发生未知错误，日期 {date}: {e}")
         raise DataSourceError(
-            f"Unexpected error fetching {index_name} constituents for date {date}: {e}")
+            f"获取 {index_name} 成分股时发生未知错误，日期 {date}: {e}")
 
-# Helper function to reduce repetition for macroeconomic data fetching
-
-
+# 辅助函数，用于减少宏观经济数据获取的重复代码
 def _fetch_macro_data(
     bs_query_func,
     data_type_name: str,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    **kwargs  # For extra params like yearType
+    **kwargs
 ) -> pd.DataFrame:
-    date_range_log = f"from {start_date or 'default'} to {end_date or 'default'}"
-    kwargs_log = f", extra_args={kwargs}" if kwargs else ""
-    logger.info(f"Fetching {data_type_name} data {date_range_log}{kwargs_log}")
+    """
+    通用函数，用于从 Baostock 获取宏观经济数据。
+
+    Args:
+        bs_query_func (function): 用于查询的 Baostock 函数。
+        data_type_name (str): 数据类型的名称，用于日志记录。
+        start_date (Optional[str], optional): 开始日期。
+        end_date (Optional[str], optional): 结束日期。
+        **kwargs: 传递给 Baostock 函数的其他参数 (例如, yearType)。
+
+    Returns:
+        pd.DataFrame: 包含宏观经济数据的 pandas DataFrame。
+    """
+    date_range_log = f"从 {start_date or '默认'} 到 {end_date or '默认'}"
+    kwargs_log = f", 额外参数={kwargs}" if kwargs else ""
+    logger.info(f"正在获取 {data_type_name} 数据 {date_range_log}{kwargs_log}")
     try:
         with baostock_login_context():
             rs = bs_query_func(start_date=start_date,
@@ -142,13 +176,13 @@ def _fetch_macro_data(
 
             if rs.error_code != '0':
                 logger.error(
-                    f"Baostock API error ({data_type_name}): {rs.error_msg} (code: {rs.error_code})")
+                    f"Baostock API 错误 ({data_type_name}): {rs.error_msg} (错误码: {rs.error_code})")
                 if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                     raise NoDataFoundError(
-                        f"No {data_type_name} data found for the specified criteria. Baostock msg: {rs.error_msg}")
+                        f"未找到符合条件的 {data_type_name} 数据。Baostock 消息: {rs.error_msg}")
                 else:
                     raise DataSourceError(
-                        f"Baostock API error fetching {data_type_name} data: {rs.error_msg} (code: {rs.error_code})")
+                        f"获取 {data_type_name} 数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
             data_list = []
             while rs.next():
@@ -156,41 +190,40 @@ def _fetch_macro_data(
 
             if not data_list:
                 logger.warning(
-                    f"No {data_type_name} data found for the specified criteria (empty result set).")
+                    f"未找到符合条件的 {data_type_name} 数据 (空结果集)。")
                 raise NoDataFoundError(
-                    f"No {data_type_name} data found for the specified criteria (empty result set).")
+                    f"未找到符合条件的 {data_type_name} 数据 (空结果集)。")
 
             result_df = pd.DataFrame(data_list, columns=rs.fields)
             logger.info(
-                f"Retrieved {len(result_df)} {data_type_name} records.")
+                f"已获取 {len(result_df)} 条 {data_type_name} 记录。")
             return result_df
 
     except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
         logger.warning(
-            f"Caught known error fetching {data_type_name} data: {type(e).__name__}")
+            f"获取 {data_type_name} 数据时捕获到已知错误: {type(e).__name__}")
         raise e
     except Exception as e:
         logger.exception(
-            f"Unexpected error fetching {data_type_name} data: {e}")
+            f"获取 {data_type_name} 数据时发生未知错误: {e}")
         raise DataSourceError(
-            f"Unexpected error fetching {data_type_name} data: {e}")
+            f"获取 {data_type_name} 数据时发生未知错误: {e}")
 
 
 class BaostockDataSource(FinancialDataSource):
     """
-    Concrete implementation of FinancialDataSource using the Baostock library.
+    使用 Baostock 库实现 FinancialDataSource 的具体类。
     """
 
     def _format_fields(self, fields: Optional[List[str]], default_fields: List[str]) -> str:
-        """Formats the list of fields into a comma-separated string for Baostock."""
+        """将字段列表格式化为 Baostock 需要的逗号分隔字符串。"""
         if fields is None or not fields:
             logger.debug(
-                f"No specific fields requested, using defaults: {default_fields}")
+                f"未请求特定字段，使用默认值: {default_fields}")
             return ",".join(default_fields)
-        # Basic validation: ensure requested fields are strings
         if not all(isinstance(f, str) for f in fields):
-            raise ValueError("All items in the fields list must be strings.")
-        logger.debug(f"Using requested fields: {fields}")
+            raise ValueError("字段列表中的所有项都必须是字符串。")
+        logger.debug(f"使用请求的字段: {fields}")
         return ",".join(fields)
 
     def get_historical_k_data(
@@ -202,13 +235,13 @@ class BaostockDataSource(FinancialDataSource):
         adjust_flag: str = "3",
         fields: Optional[List[str]] = None,
     ) -> pd.DataFrame:
-        """Fetches historical K-line data using Baostock."""
+        """使用 Baostock 获取历史K线数据。"""
         logger.info(
-            f"Fetching K-data for {code} ({start_date} to {end_date}), freq={frequency}, adjust={adjust_flag}")
+            f"正在为 {code} 获取K线数据 ({start_date} 到 {end_date})，频率={frequency}，复权={adjust_flag}")
         try:
             formatted_fields = self._format_fields(fields, DEFAULT_K_FIELDS)
             logger.debug(
-                f"Requesting fields from Baostock: {formatted_fields}")
+                f"向 Baostock 请求的字段: {formatted_fields}")
 
             with baostock_login_context():
                 rs = bs.query_history_k_data_plus(
@@ -222,14 +255,13 @@ class BaostockDataSource(FinancialDataSource):
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (K-data) for {code}: {rs.error_msg} (code: {rs.error_code})")
-                    # Check common error codes, e.g., for no data
-                    if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':  # Example error code
+                        f"Baostock API 错误 (K线数据) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
+                    if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No historical data found for {code} in the specified range. Baostock msg: {rs.error_msg}")
+                            f"在指定范围内未找到 {code} 的历史数据。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching K-data: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取K线数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -237,52 +269,43 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No historical data found for {code} in range (empty result set from Baostock).")
+                        f"在指定范围内未找到 {code} 的历史数据 (Baostock 返回空结果集)。")
                     raise NoDataFoundError(
-                        f"No historical data found for {code} in the specified range (empty result set).")
+                        f"在指定范围内未找到 {code} 的历史数据 (空结果集)。")
 
-                # Crucial: Use rs.fields for column names
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
-                logger.info(f"Retrieved {len(result_df)} records for {code}.")
+                logger.info(f"已为 {code} 获取 {len(result_df)} 条记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
-            # Re-raise known errors
             logger.warning(
-                f"Caught known error fetching K-data for {code}: {type(e).__name__}")
+                f"为 {code} 获取K线数据时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
-            # Wrap unexpected errors
-            # Use logger.exception to include traceback
             logger.exception(
-                f"Unexpected error fetching K-data for {code}: {e}")
+                f"为 {code} 获取K线数据时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching K-data for {code}: {e}")
+                f"为 {code} 获取K线数据时发生未知错误: {e}")
 
     def get_stock_basic_info(self, code: str, fields: Optional[List[str]] = None) -> pd.DataFrame:
-        """Fetches basic stock information using Baostock."""
-        logger.info(f"Fetching basic info for {code}")
+        """使用 Baostock 获取股票基本信息。"""
+        logger.info(f"正在获取 {code} 的基本信息")
         try:
-            # Note: query_stock_basic doesn't seem to have a fields parameter in docs,
-            # but we keep the signature consistent. It returns a fixed set.
-            # We will use the `fields` argument post-query to select columns if needed.
             logger.debug(
-                f"Requesting basic info for {code}. Optional fields requested: {fields}")
+                f"正在请求 {code} 的基本信息。可选字段: {fields}")
 
             with baostock_login_context():
-                # Example: Fetch basic info; adjust API call if needed based on baostock docs
-                # rs = bs.query_stock_basic(code=code, code_name=code_name) # If supporting name lookup
                 rs = bs.query_stock_basic(code=code)
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Basic Info) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (基本信息) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No basic info found for {code}. Baostock msg: {rs.error_msg}")
+                            f"未找到 {code} 的基本信息。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching basic info: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取基本信息时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -290,42 +313,40 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No basic info found for {code} (empty result set from Baostock).")
+                        f"未找到 {code} 的基本信息 (Baostock 返回空结果集)。")
                     raise NoDataFoundError(
-                        f"No basic info found for {code} (empty result set).")
+                        f"未找到 {code} 的基本信息 (空结果集)。")
 
-                # Crucial: Use rs.fields for column names
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved basic info for {code}. Columns: {result_df.columns.tolist()}")
+                    f"已获取 {code} 的基本信息。列: {result_df.columns.tolist()}")
 
-                # Optional: Select subset of columns if `fields` argument was provided
                 if fields:
                     available_cols = [
                         col for col in fields if col in result_df.columns]
                     if not available_cols:
                         raise ValueError(
-                            f"None of the requested fields {fields} are available in the basic info result.")
+                            f"请求的字段 {fields} 在基本信息结果中均不可用。")
                     logger.debug(
-                        f"Selecting columns: {available_cols} from basic info for {code}")
+                        f"为 {code} 的基本信息选择列: {available_cols}")
                     result_df = result_df[available_cols]
 
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching basic info for {code}: {type(e).__name__}")
+                f"获取 {code} 的基本信息时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching basic info for {code}: {e}")
+                f"获取 {code} 的基本信息时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching basic info for {code}: {e}")
+                f"获取 {code} 的基本信息时发生未知错误: {e}")
 
     def get_dividend_data(self, code: str, year: str, year_type: str = "report") -> pd.DataFrame:
-        """Fetches dividend information using Baostock."""
+        """使用 Baostock 获取分红信息。"""
         logger.info(
-            f"Fetching dividend data for {code}, year={year}, year_type={year_type}")
+            f"正在获取 {code} 的分红数据，年份={year}，年份类型={year_type}")
         try:
             with baostock_login_context():
                 rs = bs.query_dividend_data(
@@ -333,13 +354,13 @@ class BaostockDataSource(FinancialDataSource):
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Dividend) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (分红) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No dividend data found for {code} and year {year}. Baostock msg: {rs.error_msg}")
+                            f"未找到 {code} 在 {year} 年的分红数据。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching dividend data: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取分红数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -347,29 +368,29 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No dividend data found for {code}, year {year} (empty result set from Baostock).")
+                        f"未找到 {code} 在 {year} 年的分红数据 (Baostock 返回空结果集)。")
                     raise NoDataFoundError(
-                        f"No dividend data found for {code}, year {year} (empty result set).")
+                        f"未找到 {code} 在 {year} 年的分红数据 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} dividend records for {code}, year {year}.")
+                    f"已为 {code} 在 {year} 年获取 {len(result_df)} 条分红记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching dividend data for {code}: {type(e).__name__}")
+                f"获取 {code} 的分红数据时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching dividend data for {code}: {e}")
+                f"获取 {code} 的分红数据时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching dividend data for {code}: {e}")
+                f"获取 {code} 的分红数据时发生未知错误: {e}")
 
     def get_adjust_factor_data(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
-        """Fetches adjustment factor data using Baostock."""
+        """使用 Baostock 获取复权因子数据。"""
         logger.info(
-            f"Fetching adjustment factor data for {code} ({start_date} to {end_date})")
+            f"正在获取 {code} 的复权因子数据 ({start_date} 到 {end_date})")
         try:
             with baostock_login_context():
                 rs = bs.query_adjust_factor(
@@ -377,13 +398,13 @@ class BaostockDataSource(FinancialDataSource):
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Adjust Factor) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (复权因子) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No adjustment factor data found for {code} in the specified range. Baostock msg: {rs.error_msg}")
+                            f"在指定范围内未找到 {code} 的复权因子数据。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching adjust factor data: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取复权因子数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -391,53 +412,53 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No adjustment factor data found for {code} in range (empty result set from Baostock).")
+                        f"在指定范围内未找到 {code} 的复权因子数据 (Baostock 返回空结果集)。")
                     raise NoDataFoundError(
-                        f"No adjustment factor data found for {code} in the specified range (empty result set).")
+                        f"在指定范围内未找到 {code} 的复权因子数据 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} adjustment factor records for {code}.")
+                    f"已为 {code} 获取 {len(result_df)} 条复权因子记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching adjust factor data for {code}: {type(e).__name__}")
+                f"获取 {code} 的复权因子数据时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching adjust factor data for {code}: {e}")
+                f"获取 {code} 的复权因子数据时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching adjust factor data for {code}: {e}")
+                f"获取 {code} 的复权因子数据时发生未知错误: {e}")
 
     def get_profit_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly profitability data using Baostock."""
-        return _fetch_financial_data(bs.query_profit_data, "Profitability", code, year, quarter)
+        """使用 Baostock 获取季度盈利能力数据。"""
+        return _fetch_financial_data(bs.query_profit_data, "盈利能力", code, year, quarter)
 
     def get_operation_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly operation capability data using Baostock."""
-        return _fetch_financial_data(bs.query_operation_data, "Operation Capability", code, year, quarter)
+        """使用 Baostock 获取季度运营能力数据。"""
+        return _fetch_financial_data(bs.query_operation_data, "运营能力", code, year, quarter)
 
     def get_growth_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly growth capability data using Baostock."""
-        return _fetch_financial_data(bs.query_growth_data, "Growth Capability", code, year, quarter)
+        """使用 Baostock 获取季度成长能力数据。"""
+        return _fetch_financial_data(bs.query_growth_data, "成长能力", code, year, quarter)
 
     def get_balance_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly balance sheet data (solvency) using Baostock."""
-        return _fetch_financial_data(bs.query_balance_data, "Balance Sheet", code, year, quarter)
+        """使用 Baostock 获取季度偿债能力数据。"""
+        return _fetch_financial_data(bs.query_balance_data, "资产负债", code, year, quarter)
 
     def get_cash_flow_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly cash flow data using Baostock."""
-        return _fetch_financial_data(bs.query_cash_flow_data, "Cash Flow", code, year, quarter)
+        """使用 Baostock 获取季度现金流量数据。"""
+        return _fetch_financial_data(bs.query_cash_flow_data, "现金流量", code, year, quarter)
 
     def get_dupont_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
-        """Fetches quarterly DuPont analysis data using Baostock."""
-        return _fetch_financial_data(bs.query_dupont_data, "DuPont Analysis", code, year, quarter)
+        """使用 Baostock 获取季度杜邦指数数据。"""
+        return _fetch_financial_data(bs.query_dupont_data, "杜邦指数", code, year, quarter)
 
     def get_performance_express_report(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
-        """Fetches performance express reports (业绩快报) using Baostock."""
+        """使用 Baostock 获取业绩快报。"""
         logger.info(
-            f"Fetching Performance Express Report for {code} ({start_date} to {end_date})")
+            f"正在获取 {code} 的业绩快报 ({start_date} 到 {end_date})")
         try:
             with baostock_login_context():
                 rs = bs.query_performance_express_report(
@@ -445,13 +466,13 @@ class BaostockDataSource(FinancialDataSource):
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Perf Express) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (业绩快报) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No performance express report found for {code} in range {start_date}-{end_date}. Baostock msg: {rs.error_msg}")
+                            f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩快报。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching performance express report: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取业绩快报时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -459,74 +480,72 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No performance express report found for {code} in range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩快报 (空结果集)。")
                     raise NoDataFoundError(
-                        f"No performance express report found for {code} in range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩快报 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} performance express report records for {code}.")
+                    f"已为 {code} 获取 {len(result_df)} 条业绩快报记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching performance express report for {code}: {type(e).__name__}")
+                f"获取 {code} 的业绩快报时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching performance express report for {code}: {e}")
+                f"获取 {code} 的业绩快报时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching performance express report for {code}: {e}")
+                f"获取 {code} 的业绩快报时发生未知错误: {e}")
 
     def get_forecast_report(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
-        """Fetches performance forecast reports (业绩预告) using Baostock."""
+        """使用 Baostock 获取业绩预告。"""
         logger.info(
-            f"Fetching Performance Forecast Report for {code} ({start_date} to {end_date})")
+            f"正在获取 {code} 的业绩预告 ({start_date} 到 {end_date})")
         try:
             with baostock_login_context():
                 rs = bs.query_forecast_report(
                     code=code, start_date=start_date, end_date=end_date)
-                # Note: Baostock docs mention pagination for this, but the Python API doesn't seem to expose it directly.
-                # We fetch all available pages in the loop below.
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Forecast) for {code}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (业绩预告) for {code}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No performance forecast report found for {code} in range {start_date}-{end_date}. Baostock msg: {rs.error_msg}")
+                            f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩预告。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching performance forecast report: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取业绩预告时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
-                while rs.next():  # Loop should handle pagination implicitly if rs manages it
+                while rs.next():
                     data_list.append(rs.get_row_data())
 
                 if not data_list:
                     logger.warning(
-                        f"No performance forecast report found for {code} in range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩预告 (空结果集)。")
                     raise NoDataFoundError(
-                        f"No performance forecast report found for {code} in range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未找到 {code} 的业绩预告 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} performance forecast report records for {code}.")
+                    f"已为 {code} 获取 {len(result_df)} 条业绩预告记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching performance forecast report for {code}: {type(e).__name__}")
+                f"获取 {code} 的业绩预告时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching performance forecast report for {code}: {e}")
+                f"获取 {code} 的业绩预告时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching performance forecast report for {code}: {e}")
+                f"获取 {code} 的业绩预告时发生未知错误: {e}")
 
     def get_stock_industry(self, code: Optional[str] = None, date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches industry classification using Baostock."""
-        log_msg = f"Fetching industry data for code={code or 'all'}, date={date or 'latest'}"
+        """使用 Baostock 获取行业分类数据。"""
+        log_msg = f"正在获取行业数据，代码={code or '全部'}，日期={date or '最新'}"
         logger.info(log_msg)
         try:
             with baostock_login_context():
@@ -534,13 +553,13 @@ class BaostockDataSource(FinancialDataSource):
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Industry) for {code}, {date}: {rs.error_msg} (code: {rs.error_code})")
+                        f"Baostock API 错误 (行业) for {code}, {date}: {rs.error_msg} (错误码: {rs.error_code})")
                     if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No industry data found for {code}, {date}. Baostock msg: {rs.error_msg}")
+                            f"未找到 {code}, {date} 的行业数据。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching industry data: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取行业数据时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -548,93 +567,91 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No industry data found for {code}, {date} (empty result set).")
+                        f"未找到 {code}, {date} 的行业数据 (空结果集)。")
                     raise NoDataFoundError(
-                        f"No industry data found for {code}, {date} (empty result set).")
+                        f"未找到 {code}, {date} 的行业数据 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} industry records for {code or 'all'}, {date or 'latest'}.")
+                    f"已为 {code or '全部'}, {date or '最新'} 获取 {len(result_df)} 条行业记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching industry data for {code}, {date}: {type(e).__name__}")
+                f"获取 {code}, {date} 的行业数据时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching industry data for {code}, {date}: {e}")
+                f"获取 {code}, {date} 的行业数据时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching industry data for {code}, {date}: {e}")
+                f"获取 {code}, {date} 的行业数据时发生未知错误: {e}")
 
     def get_sz50_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches SZSE 50 index constituents using Baostock."""
-        return _fetch_index_constituent_data(bs.query_sz50_stocks, "SZSE 50", date)
+        """使用 Baostock 获取上证50指数成分股。"""
+        return _fetch_index_constituent_data(bs.query_sz50_stocks, "上证50", date)
 
     def get_hs300_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches CSI 300 index constituents using Baostock."""
-        return _fetch_index_constituent_data(bs.query_hs300_stocks, "CSI 300", date)
+        """使用 Baostock 获取沪深300指数成分股。"""
+        return _fetch_index_constituent_data(bs.query_hs300_stocks, "沪深300", date)
 
     def get_zz500_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches CSI 500 index constituents using Baostock."""
-        return _fetch_index_constituent_data(bs.query_zz500_stocks, "CSI 500", date)
+        """使用 Baostock 获取中证500指数成分股。"""
+        return _fetch_index_constituent_data(bs.query_zz500_stocks, "中证500", date)
 
     def get_trade_dates(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches trading dates using Baostock."""
+        """使用 Baostock 获取交易日。"""
         logger.info(
-            f"Fetching trade dates from {start_date or 'default'} to {end_date or 'default'}")
+            f"正在获取交易日，从 {start_date or '默认'} 到 {end_date or '默认'}")
         try:
-            with baostock_login_context():  # Login might not be strictly needed for this, but keeping consistent
+            with baostock_login_context():
                 rs = bs.query_trade_dates(
                     start_date=start_date, end_date=end_date)
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (Trade Dates): {rs.error_msg} (code: {rs.error_code})")
-                    # Unlikely to have 'no record found' for dates, but handle API errors
+                        f"Baostock API 错误 (交易日): {rs.error_msg} (错误码: {rs.error_code})")
                     raise DataSourceError(
-                        f"Baostock API error fetching trade dates: {rs.error_msg} (code: {rs.error_code})")
+                        f"获取交易日时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
                     data_list.append(rs.get_row_data())
 
                 if not data_list:
-                    # This case should ideally not happen if the API returns a valid range
                     logger.warning(
-                        f"No trade dates returned for range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未返回交易日 (空结果集)。")
                     raise NoDataFoundError(
-                        f"No trade dates found for range {start_date}-{end_date} (empty result set).")
+                        f"在 {start_date}-{end_date} 范围内未找到交易日 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
-                logger.info(f"Retrieved {len(result_df)} trade date records.")
+                logger.info(f"已获取 {len(result_df)} 条交易日记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching trade dates: {type(e).__name__}")
+                f"获取交易日时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
-            logger.exception(f"Unexpected error fetching trade dates: {e}")
+            logger.exception(f"获取交易日时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching trade dates: {e}")
+                f"获取交易日时发生未知错误: {e}")
 
     def get_all_stock(self, date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches all stock list for a given date using Baostock."""
-        logger.info(f"Fetching all stock list for date={date or 'default'}")
+        """使用 Baostock 获取某日的全部股票列表。"""
+        logger.info(f"正在获取全部股票列表，日期={date or '默认'}")
         try:
             with baostock_login_context():
                 rs = bs.query_all_stock(day=date)
 
                 if rs.error_code != '0':
                     logger.error(
-                        f"Baostock API error (All Stock) for date {date}: {rs.error_msg} (code: {rs.error_code})")
-                    if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':  # Check if this applies
+                        f"Baostock API 错误 (全部股票) for date {date}: {rs.error_msg} (错误码: {rs.error_code})")
+                    if "no record found" in rs.error_msg.lower() or rs.error_code == '10002':
                         raise NoDataFoundError(
-                            f"No stock data found for date {date}. Baostock msg: {rs.error_msg}")
+                            f"未找到日期 {date} 的股票数据。Baostock 消息: {rs.error_msg}")
                     else:
                         raise DataSourceError(
-                            f"Baostock API error fetching all stock list: {rs.error_msg} (code: {rs.error_code})")
+                            f"获取全部股票列表时 Baostock API 发生错误: {rs.error_msg} (错误码: {rs.error_code})")
 
                 data_list = []
                 while rs.next():
@@ -642,46 +659,43 @@ class BaostockDataSource(FinancialDataSource):
 
                 if not data_list:
                     logger.warning(
-                        f"No stock list returned for date {date} (empty result set).")
+                        f"日期 {date} 未返回股票列表 (空结果集)。")
                     raise NoDataFoundError(
-                        f"No stock list found for date {date} (empty result set).")
+                        f"日期 {date} 未找到股票列表 (空结果集)。")
 
                 result_df = pd.DataFrame(data_list, columns=rs.fields)
                 logger.info(
-                    f"Retrieved {len(result_df)} stock records for date {date or 'default'}.")
+                    f"已为日期 {date or '默认'} 获取 {len(result_df)} 条股票记录。")
                 return result_df
 
         except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
             logger.warning(
-                f"Caught known error fetching all stock list for date {date}: {type(e).__name__}")
+                f"为日期 {date} 获取全部股票列表时捕获到已知错误: {type(e).__name__}")
             raise e
         except Exception as e:
             logger.exception(
-                f"Unexpected error fetching all stock list for date {date}: {e}")
+                f"为日期 {date} 获取全部股票列表时发生未知错误: {e}")
             raise DataSourceError(
-                f"Unexpected error fetching all stock list for date {date}: {e}")
+                f"为日期 {date} 获取全部股票列表时发生未知错误: {e}")
 
     def get_deposit_rate_data(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches benchmark deposit rates using Baostock."""
-        return _fetch_macro_data(bs.query_deposit_rate_data, "Deposit Rate", start_date, end_date)
+        """使用 Baostock 获取存款基准利率。"""
+        return _fetch_macro_data(bs.query_deposit_rate_data, "存款利率", start_date, end_date)
 
     def get_loan_rate_data(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches benchmark loan rates using Baostock."""
-        return _fetch_macro_data(bs.query_loan_rate_data, "Loan Rate", start_date, end_date)
+        """使用 Baostock 获取贷款基准利率。"""
+        return _fetch_macro_data(bs.query_loan_rate_data, "贷款利率", start_date, end_date)
 
     def get_required_reserve_ratio_data(self, start_date: Optional[str] = None, end_date: Optional[str] = None, year_type: str = '0') -> pd.DataFrame:
-        """Fetches required reserve ratio data using Baostock."""
-        # Note the extra yearType parameter handled by kwargs
-        return _fetch_macro_data(bs.query_required_reserve_ratio_data, "Required Reserve Ratio", start_date, end_date, yearType=year_type)
+        """使用 Baostock 获取存款准备金率。"""
+        return _fetch_macro_data(bs.query_required_reserve_ratio_data, "存款准备金率", start_date, end_date, yearType=year_type)
 
     def get_money_supply_data_month(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches monthly money supply data (M0, M1, M2) using Baostock."""
-        # Baostock expects YYYY-MM format for dates here
-        return _fetch_macro_data(bs.query_money_supply_data_month, "Monthly Money Supply", start_date, end_date)
+        """使用 Baostock 获取月度货币供应量。"""
+        return _fetch_macro_data(bs.query_money_supply_data_month, "月度货币供应量", start_date, end_date)
 
     def get_money_supply_data_year(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        """Fetches yearly money supply data (M0, M1, M2 - year end balance) using Baostock."""
-        # Baostock expects YYYY format for dates here
-        return _fetch_macro_data(bs.query_money_supply_data_year, "Yearly Money Supply", start_date, end_date)
+        """使用 Baostock 获取年度货币供应量。"""
+        return _fetch_macro_data(bs.query_money_supply_data_year, "年度货币供应量", start_date, end_date)
 
-    # Note: SHIBOR is not available in current Baostock API bindings used; not implemented.
+    # 注意: SHIBOR 在当前使用的 Baostock API 绑定中不可用; 未实现。

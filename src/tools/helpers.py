@@ -1,6 +1,6 @@
 """
-Helper tools for code normalization and constants discovery.
-These are agent-friendly utilities with clear, unambiguous parameters.
+用于代码规范化和常量发现的辅助工具。
+这些是代理友好的实用程序，具有清晰、明确的参数。
 """
 import logging
 import re
@@ -13,37 +13,36 @@ logger = logging.getLogger(__name__)
 
 def register_helpers_tools(app: FastMCP):
     """
-    Register helper/utility tools with the MCP app.
+    向 MCP 应用注册辅助/实用工具。
     """
 
     @app.tool()
     def normalize_stock_code(code: str) -> str:
         """
-        Normalize a stock code to Baostock format.
+        将股票代码规范化为 Baostock 格式。
 
-        Rules:
-            - If 6 digits and starts with '6' -> 'sh.<code>'
-            - If 6 digits and starts with other -> 'sz.<code>'
-            - Accept '600000.SH'/'000001.SZ' -> lower and reorder to 'sh.600000'/'sz.000001'
-            - Accept 'sh600000'/'sz000001' -> insert dot
+        规则:
+            - 如果是6位数字且以 '6' 开头 -> 'sh.<code>'
+            - 如果是6位数字且以其他数字开头 -> 'sz.<code>'
+            - 接受 '600000.SH'/'000001.SZ' -> 转换为小写并重新排序为 'sh.600000'/'sz.000001'
+            - 接受 'sh600000'/'sz000001' -> 插入点
 
         Args:
-            code: Raw stock code (e.g., '600000', '000001.SZ', 'sh600000').
+            code (str): 原始股票代码 (例如, '600000', '000001.SZ', 'sh600000')。
 
         Returns:
-            Normalized code like 'sh.600000' or an error string if invalid.
+            str: 规范化后的代码，如 'sh.600000'，如果无效则返回错误字符串。
 
         Examples:
             - normalize_stock_code('600000') -> 'sh.600000'
             - normalize_stock_code('000001.SZ') -> 'sz.000001'
         """
-        logger.info("Tool 'normalize_stock_code' called with input=%s", code)
+        logger.info("工具 'normalize_stock_code' 已使用输入=%s 调用", code)
         try:
             raw = (code or "").strip()
             if not raw:
-                return "Error: 'code' is required."
+                return "错误: 'code' 是必需的。"
 
-            # Patterns
             m = re.fullmatch(r"(?i)(sh|sz)[\.]?(\d{6})", raw)
             if m:
                 ex = m.group(1).lower()
@@ -62,36 +61,36 @@ def register_helpers_tools(app: FastMCP):
                 ex = "sh" if num.startswith("6") else "sz"
                 return f"{ex}.{num}"
 
-            return "Error: Unsupported code format. Examples: 'sh.600000', '600000', '000001.SZ'."
+            return "错误: 不支持的代码格式。示例: 'sh.600000', '600000', '000001.SZ'。"
         except Exception as e:
-            logger.exception("Exception in normalize_stock_code: %s", e)
-            return f"Error: {e}"
+            logger.exception("normalize_stock_code 中发生异常: %s", e)
+            return f"错误: {e}"
 
     @app.tool()
     def list_tool_constants(kind: Optional[str] = None) -> str:
         """
-        List valid constants for tool parameters.
+        列出工具参数的有效常量。
 
         Args:
-            kind: Optional filter: 'frequency' | 'adjust_flag' | 'year_type' | 'index'. If None, show all.
+            kind (Optional[str], optional): 可选过滤器: 'frequency' | 'adjust_flag' | 'year_type' | 'index'。如果为 None，则显示所有。
 
         Returns:
-            Markdown table(s) of constants and meanings.
+            str: 常量及其含义的 Markdown 表格。
         """
-        logger.info("Tool 'list_tool_constants' called kind=%s", kind or "all")
+        logger.info("工具 'list_tool_constants' 已调用 kind=%s", kind or "所有")
         freq = [
-            ("d", "daily"), ("w", "weekly"), ("m", "monthly"),
-            ("5", "5 minutes"), ("15", "15 minutes"), ("30", "30 minutes"), ("60", "60 minutes"),
+            ("d", "每日"), ("w", "每周"), ("m", "每月"),
+            ("5", "5分钟"), ("15", "15分钟"), ("30", "30分钟"), ("60", "60分钟"),
         ]
-        adjust = [("1", "forward adjusted"), ("2", "backward adjusted"), ("3", "unadjusted")]
-        year_type = [("report", "announcement year"), ("operate", "ex-dividend year")]
-        index = [("hs300", "CSI 300"), ("sz50", "SSE 50"), ("zz500", "CSI 500")]
+        adjust = [("1", "后复权"), ("2", "前复权"), ("3", "不复权")]
+        year_type = [("report", "公告年份"), ("operate", "除权除息年份")]
+        index = [("hs300", "沪深300"), ("sz50", "上证50"), ("zz500", "中证500")]
 
         sections = []
         def as_md(title: str, rows):
             if not rows:
                 return ""
-            header = f"### {title}\n\n| value | meaning |\n|---|---|\n"
+            header = f"### {title}\n\n| 值 | 含义 |\n|---|---|\n"
             lines = [f"| {v} | {m} |" for (v, m) in rows]
             return header + "\n".join(lines) + "\n"
 
@@ -107,6 +106,5 @@ def register_helpers_tools(app: FastMCP):
 
         out = "\n".join(s for s in sections if s)
         if not out:
-            return "Error: Invalid kind. Use one of 'frequency', 'adjust_flag', 'year_type', 'index'."
+            return "错误: 无效的类型。请使用 'frequency', 'adjust_flag', 'year_type', 'index' 之一。"
         return out
-
