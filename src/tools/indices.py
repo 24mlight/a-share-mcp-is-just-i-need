@@ -1,6 +1,13 @@
 """
-Index-related tools for the MCP server.
-Includes index constituents and industry utilities with clear, discoverable parameters.
+注册并实现与指数和行业相关的MCP工具。
+
+该模块提供了以下功能：
+- 获取股票所属行业 (`get_stock_industry`)
+- 获取主要指数（上证50、沪深300、中证500）的成分股 (`get_sz50_stocks`, `get_hs300_stocks`, `get_zz500_stocks`, `get_index_constituents`)
+- 列出所有行业分类 (`list_industries`)
+- 获取特定行业的成分股 (`get_industry_members`)
+
+这些工具旨在为用户提供关于市场结构和分类的宏观视角。
 """
 import logging
 from typing import Optional, List
@@ -15,24 +22,26 @@ logger = logging.getLogger(__name__)
 
 def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register index related tools with the MCP app.
+    向MCP应用注册所有与指数和行业相关的工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
     def get_stock_industry(code: Optional[str] = None, date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get industry classification for a specific stock or all stocks on a date.
+        获取指定日期单个股票或所有股票的行业分类。
 
         Args:
-            code: Optional stock code in Baostock format (e.g., 'sh.600000'). If None, returns all.
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
+            code (Optional[str], optional): Baostock格式的可选股票代码 (例如, 'sh.600000')。如果为None，则返回所有股票的行业信息。
+            date (Optional[str], optional): 可选的 'YYYY-MM-DD' 格式日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with industry data or an error message.
+            str: 包含行业数据的Markdown表格或错误消息。
         """
         log_msg = f"Tool 'get_stock_industry' called for code={code or 'all'}, date={date or 'latest'}"
         logger.info(log_msg)
@@ -52,13 +61,15 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
     @app.tool()
     def get_sz50_stocks(date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches the constituent stocks of the SZSE 50 Index for a given date.
+        获取指定日期的上证50指数成分股。
 
         Args:
-            date: Optional. The date in 'YYYY-MM-DD' format. If None, uses the latest available date.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with SZSE 50 constituent stocks or an error message.
+            str: 包含上证50成分股的Markdown表格或错误消息。
         """
         return call_index_constituent_tool(
             "get_sz50_stocks",
@@ -71,13 +82,15 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
     @app.tool()
     def get_hs300_stocks(date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetch the constituent stocks of the CSI 300 Index for a given date.
+        获取指定日期的沪深300指数成分股。
 
         Args:
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with CSI 300 constituent stocks or an error message.
+            str: 包含沪深300成分股的Markdown表格或错误消息。
         """
         return call_index_constituent_tool(
             "get_hs300_stocks",
@@ -90,13 +103,15 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
     @app.tool()
     def get_zz500_stocks(date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetch the constituent stocks of the CSI 500 Index for a given date.
+        获取指定日期的中证500指数成分股。
 
         Args:
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with CSI 500 constituent stocks or an error message.
+            str: 包含中证500成分股的Markdown表格或错误消息。
         """
         return call_index_constituent_tool(
             "get_zz500_stocks",
@@ -114,16 +129,16 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
         format: str = "markdown",
     ) -> str:
         """
-        Get constituents for a major index.
+        获取主要指数的成分股。
 
         Args:
-            index: One of 'hs300' (CSI 300), 'sz50' (SSE 50), 'zz500' (CSI 500).
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
-            limit: Max rows to return (pagination helper). Defaults to 250.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            index (str): 'hs300' (沪深300), 'sz50' (上证50), 'zz500' (中证500)之一。
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Table of index constituents in the requested format. Defaults to Markdown.
+            str: 按请求格式（默认为Markdown）输出的指数成分股表格。
 
         Examples:
             - get_index_constituents(index='hs300')
@@ -155,14 +170,14 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
     @app.tool()
     def list_industries(date: Optional[str] = None, format: str = "markdown") -> str:
         """
-        List distinct industries for a given date.
+        列出指定日期的所有不同行业。
 
         Args:
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            One-column table of industries.
+            str: 包含所有行业的单列表格。
         """
         logger.info("Tool 'list_industries' called date=%s", date or "latest")
         try:
@@ -186,16 +201,16 @@ def register_index_tools(app: FastMCP, active_data_source: FinancialDataSource):
         format: str = "markdown",
     ) -> str:
         """
-        Get all stocks that belong to a given industry on a date.
+        获取在指定日期属于某一特定行业的所有股票。
 
         Args:
-            industry: Exact industry name to filter by (see list_industries).
-            date: Optional 'YYYY-MM-DD'. If None, uses the latest available date.
-            limit: Max rows to return. Defaults to 250.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            industry (str): 要筛选的精确行业名称 (可参考 `list_industries` 的输出)。
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用最新可用日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Table of stocks in the given industry.
+            str: 包含指定行业内所有股票的表格。
         """
         logger.info(
             "Tool 'get_industry_members' called industry=%s, date=%s, limit=%s, format=%s",

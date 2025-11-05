@@ -1,6 +1,11 @@
 """
-Helper tools for code normalization and constants discovery.
-These are agent-friendly utilities with clear, unambiguous parameters.
+注册并实现与代码规范化和常量发现相关的辅助工具。
+
+这些工具旨在为AI代理（Agent）提供便利，使其能够：
+- 将各种格式的股票代码规范化为Baostock所需的标准格式 (`normalize_stock_code`)。
+- 查询其他工具中使用的有效常量值及其含义 (`list_tool_constants`)，例如`frequency`、`adjust_flag`等。
+
+这有助于提高代理与工具集交互的健壮性和准确性。
 """
 import logging
 import re
@@ -13,25 +18,28 @@ logger = logging.getLogger(__name__)
 
 def register_helpers_tools(app: FastMCP):
     """
-    Register helper/utility tools with the MCP app.
+    向MCP应用注册所有辅助工具。
+
+    Args:
+        app (FastMCP): FastMCP应用实例。
     """
 
     @app.tool()
     def normalize_stock_code(code: str) -> str:
         """
-        Normalize a stock code to Baostock format.
+        将股票代码规范化为Baostock格式。
 
-        Rules:
-            - If 6 digits and starts with '6' -> 'sh.<code>'
-            - If 6 digits and starts with other -> 'sz.<code>'
-            - Accept '600000.SH'/'000001.SZ' -> lower and reorder to 'sh.600000'/'sz.000001'
-            - Accept 'sh600000'/'sz000001' -> insert dot
+        规则:
+            - 如果是6位数字且以'6'开头 -> 'sh.<code>'
+            - 如果是6位数字且以其他数字开头 -> 'sz.<code>'
+            - 接受'600000.SH'/'000001.SZ' -> 转换为小写并重排为'sh.600000'/'sz.000001'
+            - 接受'sh600000'/'sz000001' -> 插入点'.'
 
         Args:
-            code: Raw stock code (e.g., '600000', '000001.SZ', 'sh600000').
+            code (str): 原始股票代码 (例如, '600000', '000001.SZ', 'sh600000')。
 
         Returns:
-            Normalized code like 'sh.600000' or an error string if invalid.
+            str: 规范化后的代码，如'sh.600000'，如果无效则返回错误字符串。
 
         Examples:
             - normalize_stock_code('600000') -> 'sh.600000'
@@ -70,13 +78,14 @@ def register_helpers_tools(app: FastMCP):
     @app.tool()
     def list_tool_constants(kind: Optional[str] = None) -> str:
         """
-        List valid constants for tool parameters.
+        列出工具参数的有效常量值。
 
         Args:
-            kind: Optional filter: 'frequency' | 'adjust_flag' | 'year_type' | 'index'. If None, show all.
+            kind (Optional[str], optional): 可选的筛选条件: 'frequency' | 'adjust_flag' | 'year_type' | 'index'。
+                                            如果为None，则显示所有类型的常量。
 
         Returns:
-            Markdown table(s) of constants and meanings.
+            str: 包含常量及其含义的Markdown表格。
         """
         logger.info("Tool 'list_tool_constants' called kind=%s", kind or "all")
         freq = [

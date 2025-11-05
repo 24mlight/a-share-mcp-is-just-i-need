@@ -1,6 +1,17 @@
 """
-Financial report tools for the MCP server.
-Clear, strongly-typed parameters; consistent output options.
+注册并实现与财务报告相关的MCP工具。
+
+该模块提供了一系列用于查询上市公司财务数据的工具，包括：
+- 盈利能力 (`get_profit_data`)
+- 营运能力 (`get_operation_data`)
+- 成长能力 (`get_growth_data`)
+- 偿债能力 (资产负债) (`get_balance_data`)
+- 现金流量 (`get_cash_flow_data`)
+- 杜邦分析 (`get_dupont_data`)
+- 业绩快报 (`get_performance_express_report`)
+- 业绩预告 (`get_forecast_report`)
+
+这些工具大多利用了`src.tools.base`中的辅助函数来简化代码和统一错误处理。
 """
 import logging
 from typing import List, Optional
@@ -14,25 +25,27 @@ logger = logging.getLogger(__name__)
 
 def register_financial_report_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register financial report related tools with the MCP app.
+    向MCP应用注册所有与财务报告相关的工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
     def get_profit_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly profitability data (e.g., ROE, net profit margin) for a stock.
+        获取股票的季度盈利能力数据（例如，净资产收益率ROE、净利率）。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Profitability metrics table.
+            str: 包含盈利能力指标的表格。
         """
         return call_financial_data_tool(
             "get_profit_data",
@@ -45,15 +58,17 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_operation_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly operation capability data (e.g., turnover ratios) for a stock.
+        获取股票的季度营运能力数据（例如，周转率）。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Operation capability metrics table.
+            str: 包含营运能力指标的表格。
         """
         return call_financial_data_tool(
             "get_operation_data",
@@ -66,15 +81,17 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_growth_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly growth capability data (e.g., YOY growth rates) for a stock.
+        获取股票的季度成长能力数据（例如，同比增长率）。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Growth capability metrics table.
+            str: 包含成长能力指标的表格。
         """
         return call_financial_data_tool(
             "get_growth_data",
@@ -87,15 +104,17 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_balance_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly balance sheet / solvency data (e.g., current ratio, debt ratio) for a stock.
+        获取股票的季度偿债能力数据（例如，流动比率、资产负债率）。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Balance sheet metrics table.
+            str: 包含偿债能力指标的表格。
         """
         return call_financial_data_tool(
             "get_balance_data",
@@ -108,15 +127,17 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_cash_flow_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly cash flow data (e.g., CFO/Operating Revenue ratio) for a stock.
+        获取股票的季度现金流量数据。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Cash flow metrics table.
+            str: 包含现金流量指标的表格。
         """
         return call_financial_data_tool(
             "get_cash_flow_data",
@@ -129,15 +150,17 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_dupont_data(code: str, year: str, quarter: int, limit: int = 250, format: str = "markdown") -> str:
         """
-        Get quarterly DuPont analysis data (ROE decomposition) for a stock.
+        获取股票的季度杜邦分析数据（ROE分解）。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            year: The 4-digit year (e.g., '2023').
-            quarter: The quarter (1, 2, 3, or 4).
+            code (str): 股票代码 (例如, 'sh.600000')。
+            year (str): 4位数字年份 (例如, '2023')。
+            quarter (int): 季度 (1, 2, 3, 或 4)。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            DuPont analysis metrics table.
+            str: 包含杜邦分析指标的表格。
         """
         return call_financial_data_tool(
             "get_dupont_data",
@@ -150,16 +173,18 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_performance_express_report(code: str, start_date: str, end_date: str, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches performance express reports (业绩快报) for a stock within a date range.
-        Note: Companies are not required to publish these except in specific cases.
+        获取指定日期范围内的股票业绩快报。
+        注意：除非在特定情况下，否则公司不需要发布这些报告。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            start_date: Start date (for report publication/update) in 'YYYY-MM-DD' format.
-            end_date: End date (for report publication/update) in 'YYYY-MM-DD' format.
+            code (str): 股票代码 (例如, 'sh.600000')。
+            start_date (str): 报告发布/更新的开始日期，格式为 'YYYY-MM-DD'。
+            end_date (str): 报告发布/更新的结束日期，格式为 'YYYY-MM-DD'。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with performance express report data or an error message.
+            str: 包含业绩快报数据的Markdown表格或错误消息。
         """
         logger.info(
             f"Tool 'get_performance_express_report' called for {code} ({start_date} to {end_date})")
@@ -181,16 +206,18 @@ def register_financial_report_tools(app: FastMCP, active_data_source: FinancialD
     @app.tool()
     def get_forecast_report(code: str, start_date: str, end_date: str, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches performance forecast reports (业绩预告) for a stock within a date range.
-        Note: Companies are not required to publish these except in specific cases.
+        获取指定日期范围内的股票业绩预告。
+        注意：除非在特定情况下，否则公司不需要发布这些报告。
 
         Args:
-            code: The stock code (e.g., 'sh.600000').
-            start_date: Start date (for report publication/update) in 'YYYY-MM-DD' format.
-            end_date: End date (for report publication/update) in 'YYYY-MM-DD' format.
+            code (str): 股票代码 (例如, 'sh.600000')。
+            start_date (str): 报告发布/更新的开始日期，格式为 'YYYY-MM-DD'。
+            end_date (str): 报告发布/更新的结束日期，格式为 'YYYY-MM-DD'。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with performance forecast report data or an error message.
+            str: 包含业绩预告数据的Markdown表格或错误消息。
         """
         logger.info(
             f"Tool 'get_forecast_report' called for {code} ({start_date} to {end_date})")

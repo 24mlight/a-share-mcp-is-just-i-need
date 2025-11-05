@@ -1,4 +1,14 @@
-# Main MCP server file
+"""
+MCP服务器主入口文件。
+
+该文件负责初始化并运行一个FastMCP应用，专门为中国A股市场提供数据服务。
+主要执行以下任务：
+1.  **设置日志**: 配置全局日志记录器。
+2.  **依赖注入**: 实例化数据源（例如BaostockDataSource），并将其注入到各个工具模块中。
+3.  **MCP应用初始化**: 创建FastMCP实例，并设置服务器名称和描述。
+4.  **工具注册**: 从`src.tools`目录导入并注册所有可用的数据查询和分析工具。
+5.  **服务器启动**: 在`if __name__ == "__main__":`块中，通过标准输入/输出（stdio）启动服务器，使其能与MCP客户端（如IDE插件、CherryStudio等）通信。
+"""
 import logging
 from datetime import datetime
 

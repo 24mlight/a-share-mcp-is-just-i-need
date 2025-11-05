@@ -1,5 +1,11 @@
 """
-Markdown formatting utilities for A-Share MCP Server.
+提供将pandas DataFrame格式化为不同字符串输出（如Markdown、JSON、CSV）的工具函数。
+
+该模块的核心功能是`format_table_output`，它是一个通用的格式化函数，
+可以根据指定的格式对DataFrame进行转换，并可选地添加元数据。
+`format_df_to_markdown`则专门用于处理向后兼容的Markdown格式化，并支持行数截断。
+
+这些函数旨在为MCP工具提供统一、灵活且对上下文长度友好的输出方式。
 """
 import pandas as pd
 import logging
@@ -12,14 +18,15 @@ MAX_MARKDOWN_ROWS = 250
 
 
 def format_df_to_markdown(df: pd.DataFrame, max_rows: int = None) -> str:
-    """Formats a Pandas DataFrame to a Markdown string with row truncation.
+    """
+    将pandas DataFrame格式化为带行截断的Markdown字符串。
 
     Args:
-        df: The DataFrame to format
-        max_rows: Maximum rows to include in output. Defaults to MAX_MARKDOWN_ROWS if None.
+        df (pd.DataFrame): 要格式化的DataFrame。
+        max_rows (int, optional): 输出中要包含的最大行数。如果为None，则默认为`MAX_MARKDOWN_ROWS`。
 
     Returns:
-        A markdown formatted string representation of the DataFrame
+        str: DataFrame的Markdown格式字符串表示。
     """
     if df is None or df.empty:
         logger.warning("Attempted to format an empty DataFrame to Markdown.")
@@ -52,16 +59,17 @@ def format_table_output(
     max_rows: int | None = None,
     meta: dict | None = None,
 ) -> str:
-    """Formats a DataFrame into the requested string format with optional meta.
+    """
+    将DataFrame格式化为请求的字符串格式，并可选择性地包含元数据。
 
     Args:
-        df: Data to format.
-        format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
-        max_rows: Optional max rows to include (defaults depend on formatters).
-        meta: Optional metadata dict to include (prepended for markdown, embedded for json).
+        df (pd.DataFrame): 要格式化的数据。
+        format (str, optional): 'markdown' | 'json' | 'csv'。默认为 'markdown'。
+        max_rows (int | None, optional): 要包含的最大行数（默认值取决于格式化程序）。
+        meta (dict | None, optional): 要包含的可选元数据字典（对于markdown会前置，对于json会嵌入）。
 
     Returns:
-        A string suitable for tool responses.
+        str: 适合工具响应的字符串。
     """
     fmt = (format or "markdown").lower()
 

@@ -1,6 +1,11 @@
 """
-Analysis tools for MCP server.
-Contains tools for generating stock analysis reports.
+注册并实现用于生成股票分析报告的MCP工具。
+
+该模块的核心功能是`get_stock_analysis`工具，它能够整合来自数据源的多种信息
+（如基本信息、财务指标、历史价格），并生成一份结构化的、数据驱动的分析报告。
+
+报告本身不构成投资建议，而是对公开数据的客观呈现和基本解读，旨在为用户
+提供决策支持信息。
 """
 import logging
 from datetime import datetime, timedelta
@@ -14,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 def register_analysis_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register analysis tools with the MCP app.
+    向MCP应用注册所有分析工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
@@ -27,11 +32,11 @@ def register_analysis_tools(app: FastMCP, active_data_source: FinancialDataSourc
         提供基于数据的股票分析报告，而非投资建议。
 
         Args:
-            code: 股票代码，如'sh.600000'
-            analysis_type: 分析类型，可选'fundamental'(基本面)、'technical'(技术面)或'comprehensive'(综合)
+            code (str): 股票代码，如'sh.600000'。
+            analysis_type (str, optional): 分析类型，可选'fundamental'(基本面)、'technical'(技术面)或'comprehensive'(综合)。默认为 'fundamental'。
 
         Returns:
-            数据驱动的分析报告，包含关键财务指标、历史表现和同行业比较
+            str: 一份数据驱动的分析报告，包含关键财务指标、历史表现和同行业比较。
         """
         logger.info(
             f"Tool 'get_stock_analysis' called for {code}, type={analysis_type}")
