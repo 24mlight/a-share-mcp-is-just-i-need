@@ -1,6 +1,13 @@
 """
-Date utility tools for the MCP server.
-Convenience helpers around trading days and analysis timeframes.
+注册并实现与日期相关的实用工具。
+
+该模块提供了处理交易日历和分析时间范围的便捷工具，包括：
+- 获取最近的交易日 (`get_latest_trading_date`)
+- 根据当前上下文生成市场分析的时间范围标签 (`get_market_analysis_timeframe`)
+- 检查指定日期是否为交易日 (`is_trading_day`)
+- 获取指定日期的上一个或下一个交易日 (`previous_trading_day`, `next_trading_day`)
+
+这些工具为处理金融数据中常见的日期和时间问题提供了支持。
 """
 import logging
 from datetime import datetime, timedelta
@@ -14,20 +21,20 @@ logger = logging.getLogger(__name__)
 
 def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register date utility tools with the MCP app.
+    向MCP应用注册所有与日期工具相关的工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
     def get_latest_trading_date() -> str:
         """
-        Get the latest trading date up to today.
+        获取截至今日的最近一个交易日。
 
         Returns:
-            The latest trading date in 'YYYY-MM-DD' format.
+            str: 'YYYY-MM-DD'格式的最近交易日。
         """
         logger.info("Tool 'get_latest_trading_date' called")
         try:
@@ -60,13 +67,13 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
     @app.tool()
     def get_market_analysis_timeframe(period: str = "recent") -> str:
         """
-        Get a market analysis timeframe label tuned for current calendar context.
+        根据当前日历上下文，获取一个用于市场分析的时间范围标签。
 
         Args:
-            period: One of 'recent' (default), 'quarter', 'half_year', 'year'.
+            period (str, optional): 'recent' (默认), 'quarter', 'half_year', 'year'之一。
 
         Returns:
-            A human-friendly label plus ISO range, like "2025年1月-3月 (ISO: 2025-01-01 至 2025-03-31)".
+            str: 一个人类友好的标签，附加ISO格式的日期范围，例如 "2025年1月-3月 (ISO: 2025-01-01 to 2025-03-31)"。
         """
         logger.info(
             f"Tool 'get_market_analysis_timeframe' called with period={period}")
@@ -143,13 +150,13 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
     @app.tool()
     def is_trading_day(date: str) -> str:
         """
-        Check whether a given date is a trading day.
+        检查给定日期是否为交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD'格式的日期。
 
         Returns:
-            'Yes' or 'No'.
+            str: 'Yes' 或 'No'。
 
         Examples:
             - is_trading_day('2025-01-03')
@@ -169,13 +176,13 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
     @app.tool()
     def previous_trading_day(date: str) -> str:
         """
-        Get the previous trading day before a given date.
+        获取给定日期之前的上一个交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD'格式的日期。
 
         Returns:
-            The previous trading day in 'YYYY-MM-DD'. If none found nearby, returns input date.
+            str: 'YYYY-MM-DD'格式的上一个交易日。如果在附近未找到，则返回输入日期。
         """
         logger.info("Tool 'previous_trading_day' called date=%s", date)
         try:
@@ -198,13 +205,13 @@ def register_date_utils_tools(app: FastMCP, active_data_source: FinancialDataSou
     @app.tool()
     def next_trading_day(date: str) -> str:
         """
-        Get the next trading day after a given date.
+        获取给定日期之后的下一个交易日。
 
         Args:
-            date: 'YYYY-MM-DD'.
+            date (str): 'YYYY-MM-DD'格式的日期。
 
         Returns:
-            The next trading day in 'YYYY-MM-DD'. If none found nearby, returns input date.
+            str: 'YYYY-MM-DD'格式的下一个交易日。如果在附近未找到，则返回输入日期。
         """
         logger.info("Tool 'next_trading_day' called date=%s", date)
         try:

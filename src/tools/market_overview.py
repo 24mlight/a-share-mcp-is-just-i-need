@@ -1,6 +1,13 @@
 """
-Market overview tools for the MCP server.
-Includes trading calendar, stock list, and discovery helpers.
+注册并实现与市场概览相关的MCP工具。
+
+该模块提供的工具用于获取市场的宏观信息，例如：
+- 交易日历 (`get_trade_dates`)
+- 每日所有股票列表 (`get_all_stock`)
+- 根据关键词搜索股票 (`search_stocks`)
+- 获取当日停牌股票列表 (`get_suspensions`)
+
+这些工具帮助用户了解市场的整体状态和特定日期的交易情况。
 """
 import logging
 from typing import Optional
@@ -14,24 +21,26 @@ logger = logging.getLogger(__name__)
 
 def register_market_overview_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register market overview tools with the MCP app.
+    向MCP应用注册所有与市场概览相关的工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
     def get_trade_dates(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetch trading dates within a specified range.
+        获取指定范围内的交易日。
 
         Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format. Defaults to 2015-01-01 if None.
-            end_date: Optional. End date in 'YYYY-MM-DD' format. Defaults to the current date if None.
+            start_date (Optional[str], optional): 'YYYY-MM-DD'格式的开始日期。如果为None，默认为'2015-01-01'。
+            end_date (Optional[str], optional): 'YYYY-MM-DD'格式的结束日期。如果为None，默认为当前日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with 'is_trading_day' (1=trading, 0=non-trading).
+            str: 包含'is_trading_day'列（1=交易日, 0=非交易日）的Markdown表格。
         """
         logger.info(
             f"Tool 'get_trade_dates' called for range {start_date or 'default'} to {end_date or 'default'}")
@@ -63,13 +72,15 @@ def register_market_overview_tools(app: FastMCP, active_data_source: FinancialDa
     @app.tool()
     def get_all_stock(date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetch a list of all stocks (A-shares and indices) and their trading status for a date.
+        获取指定日期的所有股票（A股和指数）列表及其交易状态。
 
         Args:
-            date: Optional. The date in 'YYYY-MM-DD' format. If None, uses the current date.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用当前日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table listing stock codes and trading status (1=trading, 0=suspended).
+            str: 列出股票代码和交易状态（1=交易, 0=停牌）的Markdown表格。
         """
         logger.info(
             f"Tool 'get_all_stock' called for date={date or 'default'}")
@@ -101,16 +112,16 @@ def register_market_overview_tools(app: FastMCP, active_data_source: FinancialDa
     @app.tool()
     def search_stocks(keyword: str, date: Optional[str] = None, limit: int = 50, format: str = "markdown") -> str:
         """
-        Search stocks by code substring on a date.
+        在指定日期通过代码子串搜索股票。
 
         Args:
-            keyword: Substring to match in the stock code (e.g., '600', '000001').
-            date: Optional 'YYYY-MM-DD'. If None, uses current date.
-            limit: Max rows to return. Defaults to 50.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            keyword (str): 要在股票代码中匹配的子串 (例如, '600', '000001')。
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用当前日期。
+            limit (int, optional): 返回的最大行数。默认为 50。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Matching stock codes with their trading status.
+            str: 匹配的股票代码及其交易状态。
         """
         logger.info("Tool 'search_stocks' called keyword=%s, date=%s, limit=%s, format=%s", keyword, date or "default", limit, format)
         try:
@@ -131,15 +142,15 @@ def register_market_overview_tools(app: FastMCP, active_data_source: FinancialDa
     @app.tool()
     def get_suspensions(date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        List suspended stocks for a date.
+        列出指定日期的停牌股票。
 
         Args:
-            date: Optional 'YYYY-MM-DD'. If None, uses current date.
-            limit: Max rows to return. Defaults to 250.
-            format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
+            date (Optional[str], optional): 'YYYY-MM-DD'格式的日期。如果为None，则使用当前日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Table of stocks where tradeStatus==0.
+            str: 包含所有交易状态为0的股票的表格。
         """
         logger.info("Tool 'get_suspensions' called date=%s, limit=%s, format=%s", date or "current", limit, format)
         try:

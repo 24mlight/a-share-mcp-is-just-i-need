@@ -1,4 +1,11 @@
-# Utility functions, including the Baostock login context manager and logging setup
+"""
+提供通用工具函数，包括Baostock登录上下文管理器和日志设置。
+
+该模块包含项目范围内可重用的辅助函数，主要功能有：
+- `setup_logging`: 配置应用程序的基础日志记录。
+- `baostock_login_context`: 一个上下文管理器，用于自动处理Baostock的登录和登出，
+  并抑制其在标准输出中产生的消息，使得日志更加清晰。
+"""
 import baostock as bs
 import os
 import sys
@@ -8,7 +15,12 @@ from .data_source_interface import LoginError
 
 # --- Logging Setup ---
 def setup_logging(level=logging.INFO):
-    """Configures basic logging for the application."""
+    """
+    为应用程序配置基础日志记录。
+
+    Args:
+        level (int, optional): 设置日志记录的级别。默认为 `logging.INFO`。
+    """
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,7 +35,19 @@ logger = logging.getLogger(__name__)
 # --- Baostock Context Manager ---
 @contextmanager
 def baostock_login_context():
-    """Context manager to handle Baostock login and logout, suppressing stdout messages."""
+    """
+    一个处理Baostock登录和登出的上下文管理器，同时抑制stdout消息。
+
+    这个上下文管理器封装了`bs.login()`和`bs.logout()`的调用。
+    它通过临时重定向标准输出来抑制Baostock库打印的"login success!"和"logout success!"消息，
+    使得程序的日志输出更加干净。
+
+    Yields:
+        None
+
+    Raises:
+        LoginError: 如果Baostock登录失败。
+    """
     # Redirect stdout to suppress login/logout messages
     original_stdout_fd = sys.stdout.fileno()
     saved_stdout_fd = os.dup(original_stdout_fd)

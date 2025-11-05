@@ -1,6 +1,13 @@
 """
-Macroeconomic tools for the MCP server.
-Fetch interest rates, money supply data, and more with consistent options.
+注册并实现与宏观经济数据相关的MCP工具。
+
+该模块提供了查询关键宏观经济指标的功能，包括：
+- 存款利率 (`get_deposit_rate_data`)
+- 贷款利率 (`get_loan_rate_data`)
+- 存款准备金率 (`get_required_reserve_ratio_data`)
+- 货币供应量（月度/年度） (`get_money_supply_data_month`, `get_money_supply_data_year`)
+
+这些工具为分析市场整体流动性和货币政策提供了数据支持。
 """
 import logging
 from typing import Optional
@@ -14,24 +21,26 @@ logger = logging.getLogger(__name__)
 
 def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialDataSource):
     """
-    Register macroeconomic data tools with the MCP app.
+    向MCP应用注册所有与宏观经济数据相关的工具。
 
     Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
+        app (FastMCP): FastMCP应用实例。
+        active_data_source (FinancialDataSource): 已激活并实例化的金融数据源。
     """
 
     @app.tool()
     def get_deposit_rate_data(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches benchmark deposit rates (活期, 定期) within a date range.
+        获取指定日期范围内的基准存款利率（活期、定期）。
 
         Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
+            start_date (Optional[str], optional): 'YYYY-MM-DD'格式的开始日期。
+            end_date (Optional[str], optional): 'YYYY-MM-DD'格式的结束日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with deposit rate data or an error message.
+            str: 包含存款利率数据的Markdown表格或错误消息。
         """
         return call_macro_data_tool(
             "get_deposit_rate_data",
@@ -44,14 +53,16 @@ def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialData
     @app.tool()
     def get_loan_rate_data(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches benchmark loan rates (贷款利率) within a date range.
+        获取指定日期范围内的基准贷款利率。
 
         Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
+            start_date (Optional[str], optional): 'YYYY-MM-DD'格式的开始日期。
+            end_date (Optional[str], optional): 'YYYY-MM-DD'格式的结束日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with loan rate data or an error message.
+            str: 包含贷款利率数据的Markdown表格或错误消息。
         """
         return call_macro_data_tool(
             "get_loan_rate_data",
@@ -64,16 +75,17 @@ def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialData
     @app.tool()
     def get_required_reserve_ratio_data(start_date: Optional[str] = None, end_date: Optional[str] = None, year_type: str = '0', limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches required reserve ratio data (存款准备金率) within a date range.
+        获取指定日期范围内的存款准备金率数据。
 
         Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
-            year_type: Optional. Year type for date filtering. '0' for announcement date (公告日期, default),
-                    '1' for effective date (生效日期).
+            start_date (Optional[str], optional): 'YYYY-MM-DD'格式的开始日期。
+            end_date (Optional[str], optional): 'YYYY-MM-DD'格式的结束日期。
+            year_type (str, optional): 日期筛选的年份类型。'0'为公告日期（默认），'1'为生效日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with required reserve ratio data or an error message.
+            str: 包含存款准备金率数据的Markdown表格或错误消息。
         """
         # Basic validation for year_type
         if year_type not in ['0', '1']:
@@ -92,14 +104,16 @@ def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialData
     @app.tool()
     def get_money_supply_data_month(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches monthly money supply data (M0, M1, M2) within a date range.
+        获取指定日期范围内的月度货币供应量数据（M0, M1, M2）。
 
         Args:
-            start_date: Optional. Start date in 'YYYY-MM' format.
-            end_date: Optional. End date in 'YYYY-MM' format.
+            start_date (Optional[str], optional): 'YYYY-MM'格式的开始日期。
+            end_date (Optional[str], optional): 'YYYY-MM'格式的结束日期。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with monthly money supply data or an error message.
+            str: 包含月度货币供应量数据的Markdown表格或错误消息。
         """
         # Add specific validation for YYYY-MM format if desired
         return call_macro_data_tool(
@@ -113,14 +127,16 @@ def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialData
     @app.tool()
     def get_money_supply_data_year(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
         """
-        Fetches yearly money supply data (M0, M1, M2 - year end balance) within a date range.
+        获取指定年份范围内的年度货币供应量数据（M0, M1, M2 - 年末余额）。
 
         Args:
-            start_date: Optional. Start year in 'YYYY' format.
-            end_date: Optional. End year in 'YYYY' format.
+            start_date (Optional[str], optional): 'YYYY'格式的开始年份。
+            end_date (Optional[str], optional): 'YYYY'格式的结束年份。
+            limit (int, optional): 返回的最大行数。默认为 250。
+            format (str, optional): 输出格式: 'markdown' | 'json' | 'csv'。默认为 'markdown'。
 
         Returns:
-            Markdown table with yearly money supply data or an error message.
+            str: 包含年度货币供应量数据的Markdown表格或错误消息。
         """
         # Add specific validation for YYYY format if desired
         return call_macro_data_tool(
