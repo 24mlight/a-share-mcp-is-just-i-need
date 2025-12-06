@@ -137,6 +137,9 @@ cython_debug/
 
 docs/
 
+# Local tests (not committed)
+test/
+
 
 
 

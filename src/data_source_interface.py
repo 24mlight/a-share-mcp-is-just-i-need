@@ -120,4 +120,14 @@ class FinancialDataSource(ABC):
         """Fetches yearly money supply data (M0, M1, M2 - year end balance)."""
         pass
 
+    @abstractmethod
+    def get_dividend_data(self, code: str, year: str, year_type: str = "report") -> pd.DataFrame:
+        """Fetches dividend information for a stock and year."""
+        pass
+
+    @abstractmethod
+    def get_adjust_factor_data(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """Fetches adjustment factor data used for price adjustments."""
+        pass
+
     # Note: SHIBOR is not implemented in current Baostock bindings; no abstract method here.

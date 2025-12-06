@@ -1,13 +1,19 @@
 """
 Stock market tools for the MCP server.
-Historical prices, basic info, dividends, and adjust factors with clear options.
+Thin wrappers that delegate to use cases with shared validation and error handling.
 """
 import logging
 from typing import List, Optional
 
 from mcp.server.fastmcp import FastMCP
-from src.data_source_interface import FinancialDataSource, NoDataFoundError, LoginError, DataSourceError
-from src.formatting.markdown_formatter import format_df_to_markdown, format_table_output
+from src.data_source_interface import FinancialDataSource
+from src.services.tool_runner import run_tool_with_handling
+from src.use_cases.stock_market import (
+    fetch_adjust_factor_data,
+    fetch_dividend_data,
+    fetch_historical_k_data,
+    fetch_stock_basic_info,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,55 +64,27 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
             limit: Max rows to return. Defaults to 250.
             format: Output format: 'markdown' | 'json' | 'csv'. Defaults to 'markdown'.
 
-        Returns:
-            A Markdown formatted string containing the K-line data table, or an error message.
-            The table might be truncated if the result set is too large.
-        """
+            Returns:
+                A Markdown formatted string containing the K-line data table, or an error message.
+                The table might be truncated if the result set is too large.
+            """
         logger.info(
-            f"Tool 'get_historical_k_data' called for {code} ({start_date}-{end_date}, freq={frequency}, adj={adjust_flag}, fields={fields})")
-        try:
-            # Validate frequency and adjust_flag if necessary (basic example)
-            valid_freqs = ['d', 'w', 'm', '5', '15', '30', '60']
-            valid_adjusts = ['1', '2', '3']
-            if frequency not in valid_freqs:
-                logger.warning(f"Invalid frequency requested: {frequency}")
-                return f"Error: Invalid frequency '{frequency}'. Valid options are: {valid_freqs}"
-            if adjust_flag not in valid_adjusts:
-                logger.warning(f"Invalid adjust_flag requested: {adjust_flag}")
-                return f"Error: Invalid adjust_flag '{adjust_flag}'. Valid options are: {valid_adjusts}"
-
-            # Call the injected data source
-            df = active_data_source.get_historical_k_data(
+            f"Tool 'get_historical_k_data' called for {code} ({start_date}-{end_date}, freq={frequency}, adj={adjust_flag}, fields={fields})"
+        )
+        return run_tool_with_handling(
+            lambda: fetch_historical_k_data(
+                active_data_source,
                 code=code,
                 start_date=start_date,
                 end_date=end_date,
                 frequency=frequency,
                 adjust_flag=adjust_flag,
                 fields=fields,
-            )
-            # Format the result
-            logger.info(
-                f"Successfully retrieved K-data for {code}, formatting output.")
-            meta = {"code": code, "start_date": start_date, "end_date": end_date, "frequency": frequency, "adjust_flag": adjust_flag}
-            return format_table_output(df, format=format, max_rows=limit, meta=meta)
-
-        except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
-        except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
-        except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
-        except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
-        except Exception as e:
-            # Catch-all for unexpected errors
-            logger.exception(
-                f"Unexpected Exception processing get_historical_k_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+                limit=limit,
+                format=format,
+            ),
+            context=f"get_historical_k_data:{code}",
+        )
 
     @app.tool()
     def get_stock_basic_info(code: str, fields: Optional[List[str]] = None, format: str = "markdown") -> str:
@@ -122,36 +100,13 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
         Returns:
             Basic stock information in the requested format.
         """
-        logger.info(
-            f"Tool 'get_stock_basic_info' called for {code} (fields={fields})")
-        try:
-            # Call the injected data source
-            # Pass fields along; BaostockDataSource implementation handles selection
-            df = active_data_source.get_stock_basic_info(
-                code=code, fields=fields)
-
-            # Format the result (basic info usually small)
-            logger.info(
-                f"Successfully retrieved basic info for {code}, formatting output.")
-            meta = {"code": code}
-            return format_table_output(df, format=format, max_rows=df.shape[0] if df is not None else 0, meta=meta)
-
-        except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
-        except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
-        except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
-        except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter or requested field not available. {e}"
-        except Exception as e:
-            logger.exception(
-                f"Unexpected Exception processing get_stock_basic_info for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+        logger.info(f"Tool 'get_stock_basic_info' called for {code} (fields={fields})")
+        return run_tool_with_handling(
+            lambda: fetch_stock_basic_info(
+                active_data_source, code=code, fields=fields, format=format
+            ),
+            context=f"get_stock_basic_info:{code}",
+        )
 
     @app.tool()
     def get_dividend_data(code: str, year: str, year_type: str = "report", limit: int = 250, format: str = "markdown") -> str:
@@ -169,40 +124,18 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
         Returns:
             Dividend records table.
         """
-        logger.info(
-            f"Tool 'get_dividend_data' called for {code}, year={year}, year_type={year_type}")
-        try:
-            # Basic validation
-            if year_type not in ['report', 'operate']:
-                logger.warning(f"Invalid year_type requested: {year_type}")
-                return f"Error: Invalid year_type '{year_type}'. Valid options are: 'report', 'operate'"
-            if not year.isdigit() or len(year) != 4:
-                logger.warning(f"Invalid year format requested: {year}")
-                return f"Error: Invalid year '{year}'. Please provide a 4-digit year."
-
-            df = active_data_source.get_dividend_data(
-                code=code, year=year, year_type=year_type)
-            logger.info(
-                f"Successfully retrieved dividend data for {code}, year {year}.")
-            meta = {"code": code, "year": year, "year_type": year_type}
-            return format_table_output(df, format=format, max_rows=limit, meta=meta)
-
-        except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}, year {year}: {e}")
-            return f"Error: {e}"
-        except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
-        except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
-        except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
-        except Exception as e:
-            logger.exception(
-                f"Unexpected Exception processing get_dividend_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+        logger.info(f"Tool 'get_dividend_data' called for {code}, year={year}, year_type={year_type}")
+        return run_tool_with_handling(
+            lambda: fetch_dividend_data(
+                active_data_source,
+                code=code,
+                year=year,
+                year_type=year_type,
+                limit=limit,
+                format=format,
+            ),
+            context=f"get_dividend_data:{code}:{year}",
+        )
 
     @app.tool()
     def get_adjust_factor_data(code: str, start_date: str, end_date: str, limit: int = 250, format: str = "markdown") -> str:
@@ -218,30 +151,15 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
         Returns:
             Adjustment factors table.
         """
-        logger.info(
-            f"Tool 'get_adjust_factor_data' called for {code} ({start_date} to {end_date})")
-        try:
-            # Basic date validation could be added here if desired
-            df = active_data_source.get_adjust_factor_data(
-                code=code, start_date=start_date, end_date=end_date)
-            logger.info(
-                f"Successfully retrieved adjustment factor data for {code}.")
-            meta = {"code": code, "start_date": start_date, "end_date": end_date}
-            return format_table_output(df, format=format, max_rows=limit, meta=meta)
-
-        except NoDataFoundError as e:
-            logger.warning(f"NoDataFoundError for {code}: {e}")
-            return f"Error: {e}"
-        except LoginError as e:
-            logger.error(f"LoginError for {code}: {e}")
-            return f"Error: Could not connect to data source. {e}"
-        except DataSourceError as e:
-            logger.error(f"DataSourceError for {code}: {e}")
-            return f"Error: An error occurred while fetching data. {e}"
-        except ValueError as e:
-            logger.warning(f"ValueError processing request for {code}: {e}")
-            return f"Error: Invalid input parameter. {e}"
-        except Exception as e:
-            logger.exception(
-                f"Unexpected Exception processing get_adjust_factor_data for {code}: {e}")
-            return f"Error: An unexpected error occurred: {e}"
+        logger.info(f"Tool 'get_adjust_factor_data' called for {code} ({start_date} to {end_date})")
+        return run_tool_with_handling(
+            lambda: fetch_adjust_factor_data(
+                active_data_source,
+                code=code,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                format=format,
+            ),
+            context=f"get_adjust_factor_data:{code}",
+        )
