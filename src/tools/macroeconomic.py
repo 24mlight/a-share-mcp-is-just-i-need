@@ -1,134 +1,69 @@
 """
 Macroeconomic tools for the MCP server.
-Fetch interest rates, money supply data, and more with consistent options.
+Delegates to use cases with shared validation and error handling.
 """
 import logging
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 from src.data_source_interface import FinancialDataSource
-from src.tools.base import call_macro_data_tool
+from src.services.tool_runner import run_tool_with_handling
+from src.use_cases.macroeconomic import (
+    fetch_deposit_rate_data,
+    fetch_loan_rate_data,
+    fetch_money_supply_data_month,
+    fetch_money_supply_data_year,
+    fetch_required_reserve_ratio_data,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def register_macroeconomic_tools(app: FastMCP, active_data_source: FinancialDataSource):
-    """
-    Register macroeconomic data tools with the MCP app.
-
-    Args:
-        app: The FastMCP app instance
-        active_data_source: The active financial data source
-    """
+    """Register macroeconomic tools."""
 
     @app.tool()
     def get_deposit_rate_data(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
-        """
-        Fetches benchmark deposit rates (活期, 定期) within a date range.
-
-        Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
-
-        Returns:
-            Markdown table with deposit rate data or an error message.
-        """
-        return call_macro_data_tool(
-            "get_deposit_rate_data",
-            active_data_source.get_deposit_rate_data,
-            "Deposit Rate",
-            start_date, end_date,
-            limit=limit, format=format
+        """Benchmark deposit rates."""
+        return run_tool_with_handling(
+            lambda: fetch_deposit_rate_data(active_data_source, start_date=start_date, end_date=end_date, limit=limit, format=format),
+            context="get_deposit_rate_data",
         )
 
     @app.tool()
     def get_loan_rate_data(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
-        """
-        Fetches benchmark loan rates (贷款利率) within a date range.
-
-        Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
-
-        Returns:
-            Markdown table with loan rate data or an error message.
-        """
-        return call_macro_data_tool(
-            "get_loan_rate_data",
-            active_data_source.get_loan_rate_data,
-            "Loan Rate",
-            start_date, end_date,
-            limit=limit, format=format
+        """Benchmark loan rates."""
+        return run_tool_with_handling(
+            lambda: fetch_loan_rate_data(active_data_source, start_date=start_date, end_date=end_date, limit=limit, format=format),
+            context="get_loan_rate_data",
         )
 
     @app.tool()
     def get_required_reserve_ratio_data(start_date: Optional[str] = None, end_date: Optional[str] = None, year_type: str = '0', limit: int = 250, format: str = "markdown") -> str:
-        """
-        Fetches required reserve ratio data (存款准备金率) within a date range.
-
-        Args:
-            start_date: Optional. Start date in 'YYYY-MM-DD' format.
-            end_date: Optional. End date in 'YYYY-MM-DD' format.
-            year_type: Optional. Year type for date filtering. '0' for announcement date (公告日期, default),
-                    '1' for effective date (生效日期).
-
-        Returns:
-            Markdown table with required reserve ratio data or an error message.
-        """
-        # Basic validation for year_type
-        if year_type not in ['0', '1']:
-            logger.warning(f"Invalid year_type requested: {year_type}")
-            return "Error: Invalid year_type '{year_type}'. Valid options are '0' (announcement date) or '1' (effective date)."
-
-        return call_macro_data_tool(
-            "get_required_reserve_ratio_data",
-            active_data_source.get_required_reserve_ratio_data,
-            "Required Reserve Ratio",
-            start_date, end_date,
-            limit=limit, format=format,
-            yearType=year_type  # Pass the extra arg correctly named for Baostock
+        """Required reserve ratio data."""
+        return run_tool_with_handling(
+            lambda: fetch_required_reserve_ratio_data(
+                active_data_source, start_date=start_date, end_date=end_date, year_type=year_type, limit=limit, format=format
+            ),
+            context="get_required_reserve_ratio_data",
         )
 
     @app.tool()
     def get_money_supply_data_month(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
-        """
-        Fetches monthly money supply data (M0, M1, M2) within a date range.
-
-        Args:
-            start_date: Optional. Start date in 'YYYY-MM' format.
-            end_date: Optional. End date in 'YYYY-MM' format.
-
-        Returns:
-            Markdown table with monthly money supply data or an error message.
-        """
-        # Add specific validation for YYYY-MM format if desired
-        return call_macro_data_tool(
-            "get_money_supply_data_month",
-            active_data_source.get_money_supply_data_month,
-            "Monthly Money Supply",
-            start_date, end_date,
-            limit=limit, format=format
+        """Monthly money supply data."""
+        return run_tool_with_handling(
+            lambda: fetch_money_supply_data_month(
+                active_data_source, start_date=start_date, end_date=end_date, limit=limit, format=format
+            ),
+            context="get_money_supply_data_month",
         )
 
     @app.tool()
     def get_money_supply_data_year(start_date: Optional[str] = None, end_date: Optional[str] = None, limit: int = 250, format: str = "markdown") -> str:
-        """
-        Fetches yearly money supply data (M0, M1, M2 - year end balance) within a date range.
-
-        Args:
-            start_date: Optional. Start year in 'YYYY' format.
-            end_date: Optional. End year in 'YYYY' format.
-
-        Returns:
-            Markdown table with yearly money supply data or an error message.
-        """
-        # Add specific validation for YYYY format if desired
-        return call_macro_data_tool(
-            "get_money_supply_data_year",
-            active_data_source.get_money_supply_data_year,
-            "Yearly Money Supply",
-            start_date, end_date,
-            limit=limit, format=format
+        """Yearly money supply data."""
+        return run_tool_with_handling(
+            lambda: fetch_money_supply_data_year(
+                active_data_source, start_date=start_date, end_date=end_date, limit=limit, format=format
+            ),
+            context="get_money_supply_data_year",
         )
-
-    # Note: SHIBOR 查询未在当前 baostock 绑定中提供，对应工具不实现。

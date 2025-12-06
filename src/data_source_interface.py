@@ -130,4 +130,58 @@ class FinancialDataSource(ABC):
         """Fetches adjustment factor data used for price adjustments."""
         pass
 
+    # Financial report datasets
+    @abstractmethod
+    def get_profit_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_operation_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_growth_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_balance_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_cash_flow_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_dupont_data(self, code: str, year: str, quarter: int) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_performance_express_report(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_forecast_report(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        pass
+
+    # Index / industry
+    @abstractmethod
+    def get_stock_industry(self, code: Optional[str] = None, date: Optional[str] = None) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_hs300_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_sz50_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def get_zz500_stocks(self, date: Optional[str] = None) -> pd.DataFrame:
+        pass
+
+    # Market overview
+    @abstractmethod
+    def get_all_stock(self, date: Optional[str] = None) -> pd.DataFrame:
+        pass
     # Note: SHIBOR is not implemented in current Baostock bindings; no abstract method here.
