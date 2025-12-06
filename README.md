@@ -206,7 +206,7 @@ uv sync
 
 ## 工具列表
 
-该 MCP 服务器提供以下工具：
+该 MCP 服务器目前提供 **40** 个工具，覆盖股票、财报、宏观、日期分析等全方位数据。以下是完整列表：
 
 <div align="center">
   <details>
@@ -214,65 +214,70 @@ uv sync
     <br>
     <table>
       <tr>
-        <th>🏛️ 股票市场数据</th>
-        <th>📊 财务报表数据</th>
-        <th>🔎 市场概览数据</th>
+        <th>🏛️ 股票市场数据 (Stock)</th>
+        <th>📊 财务报表数据 (Finance)</th>
       </tr>
       <tr valign="top">
         <td>
           <ul>
-            <li><code>get_historical_k_data</code></li>
-            <li><code>get_stock_basic_info</code></li>
-            <li><code>get_dividend_data</code></li>
-            <li><code>get_adjust_factor_data</code></li>
+            <li><code>get_historical_k_data</code> (历史K线)</li>
+            <li><code>get_stock_basic_info</code> (基础信息)</li>
+            <li><code>get_dividend_data</code> (分红配送)</li>
+            <li><code>get_adjust_factor_data</code> (复权因子)</li>
           </ul>
         </td>
         <td>
           <ul>
-            <li><code>get_profit_data</code></li>
-            <li><code>get_operation_data</code></li>
-            <li><code>get_growth_data</code></li>
-            <li><code>get_balance_data</code></li>
-            <li><code>get_cash_flow_data</code></li>
-            <li><code>get_dupont_data</code></li>
-          </ul>
-        </td>
-        <td>
-          <ul>
-            <li><code>get_trade_dates</code></li>
-            <li><code>get_all_stock</code></li>
+            <li><code>get_profit_data</code> (盈利能力)</li>
+            <li><code>get_operation_data</code> (营运能力)</li>
+            <li><code>get_growth_data</code> (成长能力)</li>
+            <li><code>get_balance_data</code> (资产负债)</li>
+            <li><code>get_cash_flow_data</code> (现金流量)</li>
+            <li><code>get_dupont_data</code> (杜邦分析)</li>
+            <li><code>get_performance_express_report</code> (业绩快报)</li>
+            <li><code>get_forecast_report</code> (业绩预告)</li>
           </ul>
         </td>
       </tr>
       <tr>
-        <th>📈 指数相关数据</th>
-        <th>🌐 宏观经济数据</th>
-        <th>⏰ 日期工具 & 分析</th>
+        <th>🔎 市场 & 指数 (Market & Index)</th>
+        <th>🌐 宏观 & 其它 (Macro & Utils)</th>
       </tr>
       <tr valign="top">
         <td>
           <ul>
-            <li><code>get_stock_industry</code></li>
-            <li><code>get_sz50_stocks</code></li>
-            <li><code>get_hs300_stocks</code></li>
-            <li><code>get_zz500_stocks</code></li>
+            <li><code>get_trade_dates</code> (交易日历)</li>
+            <li><code>get_all_stock</code> (全市场证券)</li>
+            <li><code>search_stocks</code> (股票搜索)</li>
+            <li><code>get_suspensions</code> (停牌信息)</li>
+            <li><code>get_stock_industry</code> (行业分类)</li>
+            <li><code>get_index_constituents</code> (指数成分)</li>
+            <li><code>get_sz50_stocks</code> (上证50)</li>
+            <li><code>get_hs300_stocks</code> (沪深300)</li>
+            <li><code>get_zz500_stocks</code> (中证500)</li>
+            <li><code>list_industries</code> (行业列表)</li>
+            <li><code>get_industry_members</code> (行业个股)</li>
           </ul>
         </td>
         <td>
           <ul>
-            <li><code>get_deposit_rate_data</code></li>
-            <li><code>get_loan_rate_data</code></li>
-            <li><code>get_required_reserve_ratio_data</code></li>
-            <li><code>get_money_supply_data_month</code></li>
-            <li><code>get_money_supply_data_year</code></li>
-            <li><code>get__data</code></li>
-          </ul>
-        </td>
-        <td>
-          <ul>
-            <!-- <li><code>get_current_date</code></li> -->
-            <li><code>get_latest_trading_date</code></li>
-            <li><code>get_stock_analysis</code></li>
+            <li><code>get_deposit_rate_data</code> (存款利率)</li>
+            <li><code>get_loan_rate_data</code> (贷款利率)</li>
+            <li><code>get_required_reserve_ratio_data</code> (存款准备金)</li>
+            <li><code>get_money_supply_data_month</code> (货币供应月)</li>
+            <li><code>get_money_supply_data_year</code> (货币供应年)</li>
+            <li><code>get_latest_trading_date</code> (最新交易日)</li>
+            <li><code>get_market_analysis_timeframe</code> (智能分析周期)</li>
+            <li><code>is_trading_day</code> (判断交易日)</li>
+            <li><code>previous_trading_day</code> (上一交易日)</li>
+            <li><code>next_trading_day</code> (下一交易日)</li>
+            <li><code>get_last_n_trading_days</code> (最近N日)</li>
+            <li><code>get_recent_trading_range</code> (近期范围)</li>
+            <li><code>get_month_end_trading_dates</code> (月末交易日)</li>
+            <li><code>get_stock_analysis</code> (生成分析报告)</li>
+            <li><code>normalize_stock_code</code> (代码标准化)</li>
+            <li><code>normalize_index_code</code> (指数代码标准化)</li>
+            <li><code>list_tool_constants</code> (常量查询)</li>
           </ul>
         </td>
       </tr>
@@ -298,40 +303,25 @@ uv sync
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,15,20,24&section=footer&height=100&animation=fadeIn" />
 </div>
 
-## 本次更新概览（2025-09）
+## 本次更新概览（2025-12）
 
-本次更新围绕“为代理编写高效工具”的实践进行，重点提升工具可发现性、可组合性与上下文效率。
+本次更新（version 2025.12.06）主要集中在 **架构重构** 与 **工具链标准化**，旨在为 AI Agent 提供更稳定、更“懂行”的数据服务。
 
-### 优化
-- 统一输出：新增可选参数 limit（默认 250）与 ormat（markdown|json|csv），默认保持 Markdown 兼容。
-- 丰富上下文：在返回中附带 meta（查询参数、as_of、返回/总行数、是否截断、列信息）。
-- 新增通用格式化器：ormat_table_output(df, format, max_rows, meta)，支持 JSON { data, meta }、CSV 及带 Meta 摘要的 Markdown。
-- 工具封装统一化：	ools/base.py 的调用助手均支持 limit/format，输出行为一致。
+### 🚀 架构升级 (Refactor)
 
-### 新增工具
-- 指数/行业：get_index_constituents、list_industries、get_industry_members
-- 市场概览：search_stocks（按代码子串检索）、get_suspensions（停牌列表）
-- 日期工具：is_trading_day、previous_trading_day、
-ext_trading_day
-- 帮助工具：
-ormalize_stock_code（统一为 sh.600000）、list_tool_constants（枚举合法取值）
+- **Clean Architecture**: 引入了 `Use Case` 层，将业务逻辑与接口适配层（Tools）彻底解耦，提升了代码的可维护性与测试性。
+- **统一错误处理**: 实现了全局的 `run_tool_with_handling` 机制，统一管理异常捕获、日志记录和错误返回格式，大幅提升系统稳定性。
+- **强类型校验**: 增强了对输入参数（如季度、日期格式、代码规范）的即时校验，减少无效请求。
 
-### 已改造工具（新增 limit/format）
-- 股票：get_historical_k_data、get_stock_basic_info、get_dividend_data、get_adjust_factor_data
-- 财报：所有季度类工具 + get_performance_express_report、get_forecast_report
-- 指数：get_stock_industry、get_sz50_stocks、get_hs300_stocks、get_zz500_stocks
-- 市场：get_trade_dates、get_all_stock
-- 宏观：存款/贷款利率、存款准备金率、货币供应量（月/年）、
+### ✨ 新增功能
 
-### 兼容性与示例
-- 向后兼容：工具名与必填参数未变；新增参数均可选；默认输出仍为 Markdown。
-- 示例：
+- **智能日期工具**:
+  - `get_market_analysis_timeframe`: 让 AI 能理解“最近”、“本季度”等自然语言时间概念。
+  - `get_last_n_trading_days`: 自动计算最近 N 个交易日，自动跳过节假日。
+- **通用能力增强**:
+  - 所有列表类工具均支持 `limit`（条数限制）和 `format`（markdown/json/csv）参数，方便 AI 根据场景按需索取数据格式。
 
-`	ext
-get_index_constituents(index='hs300', format='json', limit=100)
-search_stocks(keyword='600', date='2025-01-10', limit=20)
-get_historical_k_data(code='sh.600000', start_date='2024-01-01', end_date='2024-06-30', frequency='d', format='csv', limit=200)
-previous_trading_day('2025-01-04')
-normalize_stock_code('000001.SZ')  # -> 'sz.000001'
-`
+### 🛠️ 兼容性说明
 
+- 新增参数均为可选参数，保持了对旧版本的向后兼容性。
+- 默认输出格式维持 Markdown，确保在大多数 MCP 客户端中即插即用。
