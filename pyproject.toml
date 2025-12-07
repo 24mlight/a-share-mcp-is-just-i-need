@@ -41,3 +41,8 @@ dependencies = [
     "tzdata>=2025.2",
     "uvicorn>=0.34.2",
 ]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.0",
+]

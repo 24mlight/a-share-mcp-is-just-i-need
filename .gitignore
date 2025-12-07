@@ -137,6 +137,10 @@ cython_debug/
 
 docs/
 
+# Local tests (do not commit real-data logs or scripts)
+test/
+
+
 
 
 

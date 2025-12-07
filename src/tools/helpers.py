@@ -1,71 +1,37 @@
 """
 Helper tools for code normalization and constants discovery.
-These are agent-friendly utilities with clear, unambiguous parameters.
+Uses shared validation and helper logic.
 """
 import logging
-import re
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
+from src.services.tool_runner import run_tool_with_handling
+from src.use_cases.helpers import normalize_index_code_logic, normalize_stock_code_logic
 
 logger = logging.getLogger(__name__)
 
 
 def register_helpers_tools(app: FastMCP):
-    """
-    Register helper/utility tools with the MCP app.
-    """
+    """Register helper/utility tools with the MCP app."""
 
     @app.tool()
     def normalize_stock_code(code: str) -> str:
-        """
-        Normalize a stock code to Baostock format.
-
-        Rules:
-            - If 6 digits and starts with '6' -> 'sh.<code>'
-            - If 6 digits and starts with other -> 'sz.<code>'
-            - Accept '600000.SH'/'000001.SZ' -> lower and reorder to 'sh.600000'/'sz.000001'
-            - Accept 'sh600000'/'sz000001' -> insert dot
-
-        Args:
-            code: Raw stock code (e.g., '600000', '000001.SZ', 'sh600000').
-
-        Returns:
-            Normalized code like 'sh.600000' or an error string if invalid.
-
-        Examples:
-            - normalize_stock_code('600000') -> 'sh.600000'
-            - normalize_stock_code('000001.SZ') -> 'sz.000001'
-        """
+        """Normalize a stock code to Baostock format."""
         logger.info("Tool 'normalize_stock_code' called with input=%s", code)
-        try:
-            raw = (code or "").strip()
-            if not raw:
-                return "Error: 'code' is required."
+        return run_tool_with_handling(
+            lambda: normalize_stock_code_logic(code),
+            context="normalize_stock_code",
+        )
 
-            # Patterns
-            m = re.fullmatch(r"(?i)(sh|sz)[\.]?(\d{6})", raw)
-            if m:
-                ex = m.group(1).lower()
-                num = m.group(2)
-                return f"{ex}.{num}"
-
-            m2 = re.fullmatch(r"(\d{6})[\.]?(?i)(sh|sz)", raw)
-            if m2:
-                num = m2.group(1)
-                ex = m2.group(2).lower()
-                return f"{ex}.{num}"
-
-            m3 = re.fullmatch(r"(\d{6})", raw)
-            if m3:
-                num = m3.group(1)
-                ex = "sh" if num.startswith("6") else "sz"
-                return f"{ex}.{num}"
-
-            return "Error: Unsupported code format. Examples: 'sh.600000', '600000', '000001.SZ'."
-        except Exception as e:
-            logger.exception("Exception in normalize_stock_code: %s", e)
-            return f"Error: {e}"
+    @app.tool()
+    def normalize_index_code(code: str) -> str:
+        """Normalize common index codes to Baostock format."""
+        logger.info("Tool 'normalize_index_code' called with input=%s", code)
+        return run_tool_with_handling(
+            lambda: normalize_index_code_logic(code),
+            context="normalize_index_code",
+        )
 
     @app.tool()
     def list_tool_constants(kind: Optional[str] = None) -> str:
@@ -74,9 +40,6 @@ def register_helpers_tools(app: FastMCP):
 
         Args:
             kind: Optional filter: 'frequency' | 'adjust_flag' | 'year_type' | 'index'. If None, show all.
-
-        Returns:
-            Markdown table(s) of constants and meanings.
         """
         logger.info("Tool 'list_tool_constants' called kind=%s", kind or "all")
         freq = [
@@ -88,6 +51,7 @@ def register_helpers_tools(app: FastMCP):
         index = [("hs300", "CSI 300"), ("sz50", "SSE 50"), ("zz500", "CSI 500")]
 
         sections = []
+
         def as_md(title: str, rows):
             if not rows:
                 return ""
@@ -109,4 +73,3 @@ def register_helpers_tools(app: FastMCP):
         if not out:
             return "Error: Invalid kind. Use one of 'frequency', 'adjust_flag', 'year_type', 'index'."
         return out
-
