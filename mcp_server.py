@@ -7,10 +7,8 @@ from datetime import datetime
 
 from mcp.server.fastmcp import FastMCP
 from starlette.applications import Starlette
-from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import PlainTextResponse
-from starlette.routing import Mount
 import uvicorn
 
 # Import the interface and the concrete implementation
@@ -90,13 +88,9 @@ def _build_streamable_http_app(fastmcp_app: FastMCP, bearer_token: str | None) -
         )
 
     streamable_app = cast(Callable[[], Starlette], streamable_app_factory)()
-    if not bearer_token:
-        return streamable_app
-
-    return Starlette(
-        routes=[Mount("/", app=streamable_app)],
-        middleware=[Middleware(BearerAuthMiddleware, token=bearer_token)],
-    )
+    if bearer_token:
+        streamable_app.add_middleware(BearerAuthMiddleware, token=bearer_token)
+    return streamable_app
 
 
 def _run_streamable_http(
