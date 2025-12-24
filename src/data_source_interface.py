@@ -163,6 +163,26 @@ class FinancialDataSource(ABC):
     def get_forecast_report(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
         pass
 
+    @abstractmethod
+    def get_fina_indicator(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        Fetches financial indicators (ROE, gross margin, net margin, etc.) within a date range.
+
+        Args:
+            code: The stock code (e.g., 'sh.600000', 'sz.000001').
+            start_date: Start date in 'YYYY-MM-DD' format.
+            end_date: End date in 'YYYY-MM-DD' format.
+
+        Returns:
+            A pandas DataFrame containing financial indicators such as:
+            - roe, roe_yearly (Return on Equity)
+            - netprofit_margin, grossprofit_margin (Profitability ratios)
+            - expense_ratio, netprofit_ratio
+            - current_ratio, quick_ratio (Liquidity ratios)
+            - etc.
+        """
+        pass
+
     # Index / industry
     @abstractmethod
     def get_stock_industry(self, code: Optional[str] = None, date: Optional[str] = None) -> pd.DataFrame:

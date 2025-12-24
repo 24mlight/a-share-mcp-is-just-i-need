@@ -79,3 +79,11 @@ def fetch_forecast_report(data_source: FinancialDataSource, *, code: str, start_
     df = data_source.get_forecast_report(code=code, start_date=start_date, end_date=end_date)
     meta = {"code": code, "start_date": start_date, "end_date": end_date, "dataset": "Forecast"}
     return format_table_output(df, format=format, max_rows=limit, meta=meta)
+
+
+def fetch_fina_indicator(data_source: FinancialDataSource, *, code: str, start_date: str, end_date: str, limit: int, format: str) -> str:
+    """Fetch financial indicators (ROE, gross margin, net margin, etc.) within a date range."""
+    validate_output_format(format)
+    df = data_source.get_fina_indicator(code=code, start_date=start_date, end_date=end_date)
+    meta = {"code": code, "start_date": start_date, "end_date": end_date, "dataset": "Financial Indicators"}
+    return format_table_output(df, format=format, max_rows=limit, meta=meta)

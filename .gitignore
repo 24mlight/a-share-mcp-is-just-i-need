@@ -20,6 +20,8 @@ parts/
 sdist/
 var/
 wheels/
+.claude/
+CLAUDE.md
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/

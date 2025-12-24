@@ -684,4 +684,121 @@ class BaostockDataSource(FinancialDataSource):
         # Baostock expects YYYY format for dates here
         return _fetch_macro_data(bs.query_money_supply_data_year, "Yearly Money Supply", start_date, end_date)
 
+    def get_fina_indicator(self, code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        Fetches comprehensive financial indicators by aggregating multiple Baostock APIs.
+
+        Aggregates data from:
+        - Profitability (盈利能力)
+        - Operation Capability (营运能力)
+        - Growth Capability (成长能力)
+        - Balance Sheet/Solvency (偿债能力)
+        - Cash Flow (现金流量)
+        - DuPont Analysis (杜邦分析)
+        """
+        logger.info(f"Fetching aggregated financial indicators for {code} ({start_date} to {end_date})")
+
+        # 解析日期范围，获取年份列表
+        from datetime import datetime
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"Invalid date format. Expected YYYY-MM-DD, got {start_date} to {end_date}")
+
+        years = set(str(y) for y in range(start.year, end.year + 1))
+
+        all_results = []
+
+        try:
+            with baostock_login_context():
+                for year in years:
+                    for quarter in [1, 2, 3, 4]:
+                        # 检查季度是否在日期范围内
+                        quarter_start_month = (quarter - 1) * 3
+                        quarter_start = datetime(int(year), quarter_start_month + 1, 1)
+                        if quarter_start > end:
+                            continue
+
+                        record = {"code": code, "year": year, "quarter": quarter}
+
+                        # 1. 盈利能力
+                        try:
+                            rs = bs.query_profit_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"profit_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch profit data for {code} {year}Q{quarter}: {e}")
+
+                        # 2. 营运能力
+                        try:
+                            rs = bs.query_operation_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"operation_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch operation data for {code} {year}Q{quarter}: {e}")
+
+                        # 3. 成长能力
+                        try:
+                            rs = bs.query_growth_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"growth_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch growth data for {code} {year}Q{quarter}: {e}")
+
+                        # 4. 偿债能力
+                        try:
+                            rs = bs.query_balance_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"balance_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch balance data for {code} {year}Q{quarter}: {e}")
+
+                        # 5. 现金流量
+                        try:
+                            rs = bs.query_cash_flow_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"cashflow_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch cash flow data for {code} {year}Q{quarter}: {e}")
+
+                        # 6. 杜邦分析
+                        try:
+                            rs = bs.query_dupont_data(code=code, year=year, quarter=quarter)
+                            if rs.error_code == '0' and rs.next():
+                                row = rs.get_row_data()
+                                for i, field in enumerate(rs.fields):
+                                    record[f"dupont_{field}"] = row[i] if i < len(row) else None
+                        except Exception as e:
+                            logger.debug(f"Failed to fetch dupont data for {code} {year}Q{quarter}: {e}")
+
+                        # 只有当有数据时才添加记录
+                        if len(record) > 3:  # code + year + quarter + at least one data field
+                            all_results.append(record)
+
+                if not all_results:
+                    raise NoDataFoundError(
+                        f"No financial indicator data found for {code} in range {start_date}-{end_date}")
+
+                result_df = pd.DataFrame(all_results)
+                logger.info(f"Retrieved {len(result_df)} aggregated financial indicator records for {code}.")
+                return result_df
+
+        except (LoginError, NoDataFoundError, DataSourceError, ValueError) as e:
+            logger.warning(f"Known error fetching financial indicators for {code}: {type(e).__name__}")
+            raise e
+        except Exception as e:
+            logger.exception(f"Unexpected error fetching financial indicators for {code}: {e}")
+            raise DataSourceError(f"Unexpected error fetching financial indicators for {code}: {e}")
+
     # Note: SHIBOR is not available in current Baostock API bindings used; not implemented.
