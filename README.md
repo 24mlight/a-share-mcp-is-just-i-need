@@ -206,7 +206,7 @@ uv sync
 
 ## 工具列表
 
-该 MCP 服务器目前提供 **40** 个工具，覆盖股票、财报、宏观、日期分析等全方位数据。以下是完整列表：
+该 MCP 服务器目前提供 **41** 个工具，覆盖股票、财报、宏观、日期分析等全方位数据。以下是完整列表：
 
 <div align="center">
   <details>
@@ -236,6 +236,7 @@ uv sync
             <li><code>get_dupont_data</code> (杜邦分析)</li>
             <li><code>get_performance_express_report</code> (业绩快报)</li>
             <li><code>get_forecast_report</code> (业绩预告)</li>
+            <li><code>get_fina_indicator</code> (财务指标汇总)</li>
           </ul>
         </td>
       </tr>
@@ -303,25 +304,10 @@ uv sync
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,15,20,24&section=footer&height=100&animation=fadeIn" />
 </div>
 
-## 本次更新概览（2025-12）
+## 本次更新概览（2025-12-25）
 
-本次更新（version 2025.12.06）主要集中在 **架构重构** 与 **工具链标准化**，旨在为 AI Agent 提供更稳定、更“懂行”的数据服务。
+本次更新新增 **财务指标汇总工具**，将 6 大类财务数据聚合为一个便捷查询接口。
 
-### 🚀 架构升级 (Refactor)
+### 🆕 新增工具
 
-- **Clean Architecture**: 引入了 `Use Case` 层，将业务逻辑与接口适配层（Tools）彻底解耦，提升了代码的可维护性与测试性。
-- **统一错误处理**: 实现了全局的 `run_tool_with_handling` 机制，统一管理异常捕获、日志记录和错误返回格式，大幅提升系统稳定性。
-- **强类型校验**: 增强了对输入参数（如季度、日期格式、代码规范）的即时校验，减少无效请求。
-
-### ✨ 新增功能
-
-- **智能日期工具**:
-  - `get_market_analysis_timeframe`: 让 AI 能理解“最近”、“本季度”等自然语言时间概念。
-  - `get_last_n_trading_days`: 自动计算最近 N 个交易日，自动跳过节假日。
-- **通用能力增强**:
-  - 所有列表类工具均支持 `limit`（条数限制）和 `format`（markdown/json/csv）参数，方便 AI 根据场景按需索取数据格式。
-
-### 🛠️ 兼容性说明
-
-- 新增参数均为可选参数，保持了对旧版本的向后兼容性。
-- 默认输出格式维持 Markdown，确保在大多数 MCP 客户端中即插即用。
+- **财务指标汇总**: `get_fina_indicator` 一键获取 6 大类财务指标（盈利能力、营运能力、成长能力、偿债能力、现金流量、杜邦分析），按季度返回合并数据。
