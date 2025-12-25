@@ -29,14 +29,6 @@ a_share_mcp/
 ├── pyproject.toml          # 项目依赖配置
 ├── README.md               # 项目说明文档
 │
-├── docs/                   # 项目文档
-│   ├── baostock_com.md     # Baostock API文档
-│   ├── mcp_server_docs.md  # 服务器文档
-│   └── dev_docs/           # 开发文档
-│       ├── AppFlow.md
-│       ├── ImplementationPlan.md
-│       └── PRD.md
-│
 ├── src/                    # 源代码目录
 │   ├── __init__.py
 │   ├── baostock_data_source.py   # Baostock数据源实现
