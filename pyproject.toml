@@ -3,11 +3,11 @@ name = "a-share-mcp"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "baostock>=0.8.9",
     "httpx>=0.28.1",
-    "mcp[cli]>=1.2.0",
+    "mcp[cli]>=1.12.4",
     "pandas>=2.2.3",
     "annotated-types>=0.7.0",
     "anyio>=4.9.0",
@@ -44,5 +44,7 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = [
+    "pyright>=1.1.402",
     "pytest>=8.3.0",
+    "ruff>=0.12.1",
 ]

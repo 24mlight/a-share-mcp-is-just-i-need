@@ -196,6 +196,29 @@ uv sync
 - 确保**命令**字段中的 `uv` 或其绝对路径有效且可执行。
 - 确保**参数**字段按顺序正确填写了五个参数。
 
+## Streamable HTTP 连接方式（可选）
+
+如果需要通过 HTTP 方式启动服务（例如本地或远程部署后由客户端直连），可以启用 Streamable HTTP 传输。默认地址为 `http://<host>:<port>/mcp`。
+
+**启动示例（Windows）:**
+
+```bash
+set A_SHARE_TRANSPORT=streamable-http
+set A_SHARE_BEARER_TOKEN=your-token
+uv run python mcp_server.py
+```
+
+**可选配置:**
+
+- `A_SHARE_HOST` / `A_SHARE_PORT`：修改监听地址与端口（默认 `0.0.0.0:8000`）
+- `--host` / `--port`：命令行覆盖监听地址与端口
+- `A_SHARE_BEARER_TOKEN`：启用 Bearer Token 认证（不设置则不校验）
+
+**认证方式:**
+
+- 如果设置了 `A_SHARE_BEARER_TOKEN`，客户端请求需包含 Header：
+  `Authorization: Bearer <your-token>`
+
 ## 工具列表
 
 该 MCP 服务器目前提供 **41** 个工具，覆盖股票、财报、宏观、日期分析等全方位数据。以下是完整列表：
