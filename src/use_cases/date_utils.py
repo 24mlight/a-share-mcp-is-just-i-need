@@ -15,7 +15,7 @@ def _fetch_trading_days(data_source: FinancialDataSource, start_date: str, end_d
 def get_latest_trading_date(data_source: FinancialDataSource) -> str:
     today = datetime.now().strftime("%Y-%m-%d")
     start_date = datetime.now().replace(day=1).strftime("%Y-%m-%d")
-    end_date = datetime.now().replace(day=28).strftime("%Y-%m-%d")
+    end_date = today
     df = _fetch_trading_days(data_source, start_date=start_date, end_date=end_date)
     valid_trading_days = df[df["is_trading_day"] == "1"]["calendar_date"].tolist()
     latest_trading_date = None
