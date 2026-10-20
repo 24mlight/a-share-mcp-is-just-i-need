@@ -79,7 +79,7 @@ a_share_mcp/
 
 ## 先决条件
 
-1. **Python 环境**: Python 3.10+
+1. **Python 环境**: Python 3.12+
 2. **依赖管理**: 使用 `uv` 包管理器安装依赖
 3. **数据来源**: 基于 Baostock 数据源，无需付费账号。在此感谢 Baostock。
 4. 提醒：本项目于 Windows 环境下开发。
